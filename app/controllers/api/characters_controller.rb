@@ -10,6 +10,6 @@ class Api::CharactersController < ActionController::Base
   private
 
   def set_character
-    @design = Character.find(params[:id])
+    @character = Character.find(params[:id])
   end
 end
