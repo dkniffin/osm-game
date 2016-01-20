@@ -10,6 +10,8 @@ gem 'mapbox-rails'
 gem 'angular-rails'
 gem 'jbuilder', '~> 2.0'
 gem 'sdoc', '~> 0.4.0', group: :doc
+gem 'responders'
+gem 'active_model_serializers', '~> 0.10.0.rc3'
 
 group :development, :test do
   gem 'pry-byebug'
