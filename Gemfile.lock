@@ -79,6 +79,7 @@ GEM
       nokogiri (>= 1.5.9)
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
+    mapbox-rails (1.6.1.1)
     method_source (0.8.2)
     mime-types (2.99)
     mini_portile2 (2.0.0)
@@ -186,6 +187,7 @@ DEPENDENCIES
   factory_girl_rails
   faker
   jbuilder (~> 2.0)
+  mapbox-rails
   pg
   pry-byebug
   rails (= 4.2.4)
