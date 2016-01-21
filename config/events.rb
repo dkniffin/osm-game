@@ -14,5 +14,6 @@ WebsocketRails::EventMap.describe do
 
   namespace :character do
     subscribe :get, to: CharactersController, with_method: :get
+    subscribe :all, to: CharactersController, with_method: :all
   end
 end

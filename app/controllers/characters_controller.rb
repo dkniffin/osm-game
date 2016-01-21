@@ -1,7 +1,10 @@
 class CharactersController < WebsocketRails::BaseController
   def get
-    puts "BLAH"
-    trigger_success character
+    trigger_success @character
+  end
+
+  def all
+    trigger_success Character.all
   end
 
   private

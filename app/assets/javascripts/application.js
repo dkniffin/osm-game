@@ -10,6 +10,10 @@
 // Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
 // about supported directives.
 //
+//= require jquery
+//= require jquery_ujs
 //= require websocket_rails/main
 //= require mapbox.js
+//= require init_sockets
+//= require init_map
 //= require_tree .
