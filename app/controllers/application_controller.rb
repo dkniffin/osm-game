@@ -4,6 +4,6 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   def angular
-    render 'angular/main'
+    render 'main'
   end
 end
