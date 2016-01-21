@@ -1,1 +1,3 @@
-Character.create(name: "John Smith", lat: 37.9, lon: -77.0)
+FactoryGirl.create_list(:character, 20)
+
+Character.create(name: "John Smith", lat: 35.992591, lon: -78.903991)
