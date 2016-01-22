@@ -10,6 +10,7 @@ gem 'mapbox-rails'
 gem 'jbuilder', '~> 2.0'
 gem 'puma'
 gem 'sass'
+gem 'devise', github: 'plataformatec/devise'
 
 group :development, :test do
   gem 'pry-byebug'
