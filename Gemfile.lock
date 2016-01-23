@@ -56,6 +56,7 @@ GEM
       method_source
       minitest (~> 5.1)
       tzinfo (~> 1.1)
+    alchemist (0.1.7)
     arel (7.0.0)
     bcrypt (3.1.10)
     builder (3.2.2)
@@ -104,6 +105,7 @@ GEM
     faye-websocket (0.10.2)
       eventmachine (>= 0.12.0)
       websocket-driver (>= 0.5.1)
+    geocoder (1.2.14)
     globalid (0.3.6)
       activesupport (>= 4.1.0)
     hiredis (0.5.2)
@@ -222,10 +224,12 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  alchemist
   coffee-rails (~> 4.1.0)
   devise!
   factory_girl_rails
   faker
+  geocoder
   jbuilder (~> 2.0)
   jquery-rails
   mapbox-rails

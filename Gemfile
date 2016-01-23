@@ -11,6 +11,8 @@ gem 'jbuilder', '~> 2.0'
 gem 'puma'
 gem 'sass'
 gem 'devise', github: 'plataformatec/devise'
+gem 'alchemist'
+gem 'geocoder'
 
 group :development, :test do
   gem 'pry-byebug'

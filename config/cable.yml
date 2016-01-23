@@ -1,0 +1,3 @@
+development: &development
+  url: redis://localhost:6379
+test: *development
