@@ -17,7 +17,7 @@ class Character < ActiveRecord::Base
       new_lat, new_lon = Geocoder::Calculations.endpoint([lat,lon], bearing, dist_km)
       update(lat: new_lat, lon: new_lon)
     end
-    ActionCable.server.broadcast "characters", self.to_json
+    ActionCable.server.broadcast "characters", { id => self }
   end
 
   private
