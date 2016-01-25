@@ -1,0 +1,13 @@
+fail_on_violations: false
+
+ruby:
+  config_file: config/style_guides/ruby.yml
+
+jscs:
+  config_file: config/style_guides/javascript-jscs.json
+
+scss:
+  config_file: config/style_guides/scss.yml
+
+coffeescript:
+  config_file: config/style_guides/coffeescript.json
