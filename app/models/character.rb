@@ -12,15 +12,26 @@ class Character < ActiveRecord::Base
   def tick
     case current_action
     when 'move'
-      dist_km = (speed * Ticker::TICK_TIME) / 1000
-      bearing = bearing_to(action_details['target'])
-      new_lat, new_lon = Geocoder::Calculations.endpoint([lat,lon], bearing, dist_km)
-      update(lat: new_lat, lon: new_lon)
+      move_towards(action_details['target'])
     end
     ActionCable.server.broadcast "characters", { id => self }
   end
 
   private
+
+  def move_towards(target)
+    # Calculate new position
+    dist_km = (speed * Ticker::TICK_TIME) / 1000
+    bearing = bearing_to(target)
+    new_lat, new_lon = Geocoder::Calculations.endpoint([lat,lon], bearing, dist_km)
+    # Check if we've passed it
+    binding.pry
+    if new_lat >= target[0] || new_lon >= target[1]
+      update(lat: target[0], lon: target[1], current_action: nil, action_details: nil)
+    else
+      update(lat: new_lat, lon: new_lon)
+    end
+  end
 
   def speed
     # Units: meters/second
