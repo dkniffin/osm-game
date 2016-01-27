@@ -6,9 +6,5 @@
 #   movies = Movie.create([{ name: 'Star Wars' }, { name: 'Lord of the Rings' }])
 #   Character.create(name: 'Luke', movie: movies.first)
 
-Character.create(
-  name: "John Smith",
-  lat: 35.992591,
-  lon: -78.903991,
-  current_action: 'move',
-  action_details: { target: { lat: 35.0, lon: -78.0 } },)
+john = Character.create(name: "John Smith", lat: 35.992591, lon: -78.903991)
+john.move(35.0, -78.0)
