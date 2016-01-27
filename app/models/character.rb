@@ -20,11 +20,11 @@ class Character < ActiveRecord::Base
   private
 
   def move_towards(target)
-    target = target.map { |c| c.to_f }
+    target = target.map(&:to_f)
     # Calculate new position
     dist_km = (speed * Ticker::TICK_TIME) / 1000
     bearing = bearing_to(target)
-    new_lat, new_lon = Geocoder::Calculations.endpoint([lat,lon], bearing, dist_km)
+    new_lat, new_lon = Geocoder::Calculations.endpoint([lat, lon], bearing, dist_km)
 
     # Check if we've passed it
     if unordered_between?(new_lat, lat, target[0]) && unordered_between?(new_lon, lon, target[1])
@@ -38,8 +38,6 @@ class Character < ActiveRecord::Base
     # Units: meters/second
     stats.try(:[],'speed').try(:to_i) || 1.4
   end
-
-  private
 
   def unordered_between?(subject, arg1, arg2)
     subject.between?(*[arg1, arg2].sort)
