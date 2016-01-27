@@ -1,7 +1,11 @@
+$header-bg: rgba(0, 0, 0, 0.75);
+$resources: #fff;
+$header-links: #fff;
+
 .header {
+  background-color: $header-bg;
+  color: $resources;
   height: 30px;
-  background-color: rgba(0,0,0,0.75);
-  color: #fff;
   padding: 5px;
 
   .resources {
@@ -10,8 +14,9 @@
 
   .user-actions {
     float: right;
-    a {
-      color: #fff;
-    }
+  }
+
+  a {
+    color: $header-links;
   }
 }
