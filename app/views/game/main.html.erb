@@ -1,1 +1,14 @@
+<div class='header'>
+  <div class='resources'>
+    <span class='food'>Food: 100</span>
+    <span class='water'>Water: 100</span>
+  </div>
+  <div class='user-actions'>
+    <% if signed_in? %>
+      <%= link_to 'Log out', destroy_user_session_path, method: :delete %>
+    <% else %>
+      <%= link_to 'Log in', new_user_session_path %>
+    <% end %>
+  </div>
+</div>
 <div id='map' class='dark'></div>
