@@ -5,7 +5,7 @@ class CharactersChannel < ApplicationCable::Channel
   end
 
   def move(data)
-    character = Character.find(data[:id])
-    character.move(data[:lat], data[:lon])
+    character = Character.find(data['id'])
+    character.move(data['lat'], data['lon'])
   end
 end
