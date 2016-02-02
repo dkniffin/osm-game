@@ -1,16 +1,31 @@
-App.gameData =
-  characterMarkers: {}
-  characters: ->
+App.game = {}
 
-    update: (id, data) ->
-      marker = @getOrCreateMarker(id)
-      marker.setLatLng([data['lat'], data['lon']])
+class Character
+  @_characters: {}
 
-    getOrCreateMarker: (id) ->
-      if App.gameData.characterMarkers[id] == undefined
-        console.log('making new marker')
-        App.gameData.characterMarkers[id] = L.marker([0,0], {icon: App.icons.characterIcon}).addTo(App.map)
-      App.gameData.characterMarkers[id]
+  @get: (id) ->
+    @_characters[id]
+
+  @upsert: (id, data) ->
+    if @_characters[id] == undefined
+      console.debug('making new character')
+      @_characters[id] = new Character(data)
+    else
+      @_characters[id].update(data)
+    @_characters[id]
+
+  constructor: (@data) ->
+    @marker = L.marker([@data['lat'], @data['lon']], {icon: App.icons.characterIcon})
+    @marker.on('click', @click.bind(this))
+    @marker.addTo(App.map)
+
+  update: (data) ->
+    @marker.setLatLng([data['lat'], data['lon']])
+    @data = data
+
+  click: (e) ->
+    App.game.selected = this
+
 App.characters = App.cable.subscriptions.create "CharactersChannel",
   connected: ->
     # Called when the subscription is ready for use on the server
@@ -19,17 +34,7 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
     # Called when the subscription has been terminated by the server
 
   received: (data) ->
-    App.gameData.characters().update(id, character) for id, character of data
+    Character.upsert(id, character) for id, character of data
 
-  move: (id, lat, lon) ->
-    @perform("move", id: id, lat: lat, lon: lon)
-
-
-
-# // Query the server for all characters, then display them on the map as markers
-# dispatcher.trigger('character.all', {}, function(characters){
-#   $(characters).each(function(i,character){
-#     coords = [character.lat, character.lon]
-#     L.marker(coords, {icon: characterIcon}).addTo(map);
-#   })
-# }, log_error);
+  move: (id, latlng) ->
+    @perform("move", {id: id, lat: latlng['lat'], lon: latlng['lng']})

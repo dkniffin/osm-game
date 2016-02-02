@@ -13,4 +13,10 @@ $(document).ready(function(){
     iconSize:     [24, 24], // size of the icon
     iconAnchor:   [12, 12], // point of the icon which will correspond to marker's location
   });
+
+
+  App.map.on('contextmenu', function(e) {
+    selected = App.game.selected
+    App.characters.move(selected.data.id, e.latlng)
+  })
 })
