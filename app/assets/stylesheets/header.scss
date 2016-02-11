@@ -20,3 +20,25 @@ $header-links: #fff;
     color: $header-links;
   }
 }
+
+.resource {
+  display: inline-block;
+  i {
+    width: 32px;
+    height: 32px;
+    background: url('character.png') 0 0;
+  }
+}
+
+.food {
+  background-color: #F00;
+}
+
+.water {
+  background-color: #F00;
+}
+
+.health {
+  background-color: #F00;
+  // background: url('zombie_icons.png')
+}
