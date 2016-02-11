@@ -1,6 +1,9 @@
 $(document).ready(function(){
   // Set up the map
-  App.map = L.mapbox.map('map', 'oddityoverseer13.map-y6b598y4').setView([35.992591, -78.903991], 20);
+  // App.map = L.mapbox.map('map', 'oddityoverseer13.map-y6b598y4').setView([35.992591, -78.903991], 20);
+  L.mapbox.accessToken = 'pk.eyJ1Ijoib2RkaXR5b3ZlcnNlZXIxMyIsImEiOiIwTEp5a1JnIn0.kzeYyqB2YOj2XXXECKKnJg';
+  App.map = L.mapbox.map('map').setView([35.992591, -78.903991], 20);
+  L.mapbox.styleLayer('mapbox://styles/oddityoverseer13/ciju0qw2900073slwb1yxdi25').addTo(App.map);
 
   App.icons = {}
   App.icons.zombieIcon = L.icon({
