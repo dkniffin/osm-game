@@ -1,4 +1,10 @@
 GIT
+  remote: git://github.com/dkniffin/mapbox-rails.git
+  revision: dbbbb27de04cda3d468f4e631f234d1d1f34eb70
+  specs:
+    mapbox-rails (2.3.0)
+
+GIT
   remote: git://github.com/plataformatec/devise.git
   revision: b97b3e6e3b570324467ac84d807111837943ec20
   specs:
@@ -123,7 +129,6 @@ GEM
       nokogiri (>= 1.5.9)
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
-    mapbox-rails (1.6.1.1)
     method_source (0.8.2)
     mime-types (2.99)
     mini_portile2 (2.0.0)
@@ -232,7 +237,7 @@ DEPENDENCIES
   geocoder
   jbuilder (~> 2.0)
   jquery-rails
-  mapbox-rails
+  mapbox-rails!
   pg (~> 0.18)
   pry-byebug
   puma
