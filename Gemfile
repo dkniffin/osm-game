@@ -13,6 +13,7 @@ gem 'sass'
 gem 'devise', github: 'plataformatec/devise'
 gem 'alchemist'
 gem 'geocoder'
+gem 'slim-rails'
 
 group :development, :test do
   gem 'pry-byebug'

@@ -1,0 +1,20 @@
+.header
+  .resources
+    .food
+      = image_tag('food.png')
+      span.key Food:
+      span.value 100
+    .water
+      = image_tag('water.png')
+      span.key Water:
+      span.value 100
+    .health
+      = image_tag('health.png')
+      span.key Health:
+      span.value 100
+  .user-actions
+    - if signed_in?
+      = link_to 'Log out', destroy_user_session_path, method: :delete
+    - else
+      = link_to 'Log in', new_user_session_path
+.map
