@@ -1,7 +1,6 @@
-require 'overpass_api_ruby'
 require 'net/http'
 
-module OSM
+module OSMImporter
   extend self
   def import(bbox)
     options = { bbox: bbox, timeout: 900, element_limit: 1073741824, json: true }
