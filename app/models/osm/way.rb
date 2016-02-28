@@ -1,6 +1,7 @@
 module OSM
   class Way < OSM::Base
-    self.table_name = 'planet_osm_ways'
+    self.table_name = 'planet_osm_polygon'
+    self.primary_key = 'osm_id'
 
     def nodes
       read_attribute(:nodes).map do |node_id|

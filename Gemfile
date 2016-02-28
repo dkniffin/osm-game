@@ -15,6 +15,9 @@ gem 'alchemist'
 gem 'geocoder'
 gem 'slim-rails'
 
+# OSM Related things
+gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
+
 group :development, :test do
   gem 'pry-byebug'
   gem 'rspec-rails'
