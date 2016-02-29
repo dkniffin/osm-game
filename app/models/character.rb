@@ -6,7 +6,9 @@ class Character < ActiveRecord::Base
   reverse_geocoded_by :lat, :lon
 
   def move(lat, lon)
-    update(current_action: :move, action_details: { target_lat: lat, target_lon: lon })
+    unless in_building?(lat, lon)
+      update(current_action: :move, action_details: { target_lat: lat, target_lon: lon })
+    end
   end
 
   def tick
@@ -32,6 +34,10 @@ class Character < ActiveRecord::Base
     else
       update(lat: target[0], lon: target[1], current_action: nil, action_details: nil)
     end
+  end
+
+  def in_building?(lat, lon)
+    OSM::Way.buildings.containing_point(lat, lon).present?
   end
 
   def speed
