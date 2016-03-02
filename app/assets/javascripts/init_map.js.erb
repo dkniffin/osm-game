@@ -22,4 +22,8 @@ $(document).ready(function(){
     selected = App.game.selected
     App.characters.move(selected.data.id, e.latlng)
   })
+
+  App.map.on('click', function(e) {
+    App.game.selected.unselect();
+  })
 })
