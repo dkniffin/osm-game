@@ -16,4 +16,23 @@ RSpec.describe Character, type: :model do
       expect(subject).to be_invalid
     end
   end
+
+  describe '#take_damage' do
+    before { subject.take_damage(amount) }
+
+    context 'valid amount' do
+      let(:amount) { 10 }
+
+      it 'subtract from the total health' do
+        expect(subject.health).to eq(90)
+      end
+    end
+
+    context 'valid amount' do
+      let(:amount) { 100 }
+      it 'cannot drop below 0' do
+        expect(subject.health).to eq(0)
+      end
+    end
+  end
 end
