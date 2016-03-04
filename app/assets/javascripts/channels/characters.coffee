@@ -22,6 +22,7 @@ class Character
   update: (data) ->
     @marker.setLatLng([data['lat'], data['lon']])
     @data = data
+    $('.header .health .value').html(data['health'])
 
   click: (e) ->
     App.game.selected = this
@@ -38,3 +39,6 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   move: (id, latlng) ->
     @perform("move", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+
+  take_damage: (id, d = 5) ->
+    @perform("take_damage", {id: id, damage: d})

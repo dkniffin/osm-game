@@ -5,7 +5,16 @@ class CharactersChannel < ApplicationCable::Channel
   end
 
   def move(data)
-    character = Character.find(data['id'])
-    character.move(data['lat'], data['lon'])
+    character(data).move(data['lat'], data['lon'])
+  end
+
+  def take_damage(data)
+    character(data).take_damage(data['damage'])
+  end
+
+  private
+
+  def character(data)
+    Character.find(data['id'])
   end
 end

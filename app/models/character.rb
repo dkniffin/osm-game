@@ -24,6 +24,7 @@ class Character < ActiveRecord::Base
     else
       self.health
     end
+    save
   end
 
   private

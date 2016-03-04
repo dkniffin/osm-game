@@ -19,7 +19,6 @@ $(document).ready(function(){
 
 
   App.map.on('contextmenu', function(e) {
-    selected = App.game.selected
-    App.characters.move(selected.data.id, e.latlng)
+    App.characters.move(App.game.selected.data.id, e.latlng)
   })
 })
