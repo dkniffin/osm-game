@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
 
   def main
+    @character = Character.first
     render 'game/main'
   end
 end

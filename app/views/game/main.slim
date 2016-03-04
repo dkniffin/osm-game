@@ -3,15 +3,22 @@
     .food
       = image_tag('food.png')
       span.key Food:
-      span.value 100
+      span.value
+        = @character.food
     .water
       = image_tag('water.png')
       span.key Water:
-      span.value 100
+      span.value
+        = @character.water
     .health
       = image_tag('health.png')
       span.key Health:
-      span.value 100
+      span.value
+        = @character.health
+    .dev-console
+      span.key Devs Console:
+      = link_to "Take Damage", "#", id: "view-more-link"
+      /= image_tag('minus.png')
   .user-actions
     - if signed_in?
       = link_to 'Log out', destroy_user_session_path, method: :delete

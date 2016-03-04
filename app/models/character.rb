@@ -6,7 +6,7 @@ class Character < ActiveRecord::Base
   reverse_geocoded_by :lat, :lon
 
   def move(lat, lon)
-    unless in_building?(lat, lon)
+    unless colides_with_building?(lat, lon)
       update(current_action: :move, action_details: { target_lat: lat, target_lon: lon })
     end
   end
@@ -17,6 +17,16 @@ class Character < ActiveRecord::Base
       move_towards([action_details['target_lat'], action_details['target_lon']])
     end
     ActionCable.server.broadcast "characters", { id => self }
+  end
+
+  def take_damage(damage)
+    self.health -= damage
+    if self.health < 0
+      return 0
+    else
+      self.health
+    end
+    save
   end
 
   private
@@ -36,13 +46,13 @@ class Character < ActiveRecord::Base
     end
   end
 
-  def in_building?(lat, lon)
-    OSM::Way.buildings.containing_point(lat, lon).present?
+  def colides_with_building?(target_lat, target_lon)
+    OSM::Way.buildings.is_intersected_by_line([lat, lon], [target_lat, target_lon]).present?
   end
 
   def speed
     # Units: meters/second
-    stats.try(:[],'speed').try(:to_i) || 1.4
+    stats.try(:[],'speed').try(:to_i) || 1.4 * 5
   end
 
   def unordered_between?(subject, arg1, arg2)
