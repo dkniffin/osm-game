@@ -17,6 +17,15 @@ class Character < ActiveRecord::Base
     ActionCable.server.broadcast "characters", { id => self }
   end
 
+  def take_damage(damage)
+    self.health -= damage
+    if self.health < 0
+      return 0
+    else
+      self.health
+    end
+  end
+
   private
 
   def move_towards(target)

@@ -14,3 +14,8 @@
 //= require jquery_ujs
 //= require mapbox.js
 //= require_tree .
+
+$("#view-more-link").on('click', function(
+  $.ajax({
+  });
+}));

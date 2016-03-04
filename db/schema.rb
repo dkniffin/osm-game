@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160122214823) do
+ActiveRecord::Schema.define(version: 20160302012924) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,10 +23,13 @@ ActiveRecord::Schema.define(version: 20160122214823) do
     t.decimal  "lon"
     t.boolean  "player"
     t.hstore   "stats"
-    t.datetime "created_at",     null: false
-    t.datetime "updated_at",     null: false
+    t.datetime "created_at",                   null: false
+    t.datetime "updated_at",                   null: false
     t.string   "current_action"
     t.hstore   "action_details"
+    t.integer  "health",         default: 100
+    t.integer  "water",          default: 100
+    t.integer  "food",           default: 100
   end
 
   create_table "users", force: :cascade do |t|
