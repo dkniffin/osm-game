@@ -6,6 +6,8 @@ class Character
   SELECTED_OPACITY = 1.0
   @_characters: {}
 
+  @sidebarSection = $('.sidebar .sidebar__character')
+
   @get: (id) ->
     @_characters[id]
 
@@ -19,22 +21,45 @@ class Character
 
   constructor: (@data) ->
     @marker = L.marker([@data['lat'], @data['lon']],
-      {icon: App.icons.characterIcon, opacity: DESELECTED_OPACITY})
+      {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
     @marker.on('click', @select.bind(this))
     @marker.addTo(App.map)
 
   update: (data) ->
+    @marker.setIcon(@_characterIcon(data.health))
     @marker.setLatLng([data['lat'], data['lon']])
     @data = data
-    $('.header .health .value').html(data['health'])
+    $('.header .health .value').html(data.health)
 
   select: (e) ->
     App.game.selected = this
     @marker.setOpacity(SELECTED_OPACITY)
+    @_updateSidebar()
 
   unselect: (e) ->
     App.game.selected = null
     @marker.setOpacity(DESELECTED_OPACITY)
+    @_hideSidebar()
+
+  _updateSidebar: ->
+    sidebar = $('.sidebar .sidebar__character')
+    sidebar.children('.name').html(@data.name)
+    sidebar.show()
+
+  _hideSidebar: ->
+    sidebar = $('.sidebar .sidebar__character')
+    sidebar.hide()
+
+  _characterIcon: (health) ->
+    L.divIcon({
+      className: 'character-icon'
+      iconSize:     [48, 48]
+      iconAnchor:   [12, 12]
+      html: "#{@_healthBarHTML(health)}"
+    })
+
+  _healthBarHTML: (health) ->
+    "<progress value=#{health} max=100 />"
 
 App.characters = App.cable.subscriptions.create "CharactersChannel",
   connected: ->

@@ -52,7 +52,7 @@ class Character < ActiveRecord::Base
 
   def speed
     # Units: meters/second
-    stats.try(:[],'speed').try(:to_i) || 1.4 * 5
+    stats.try(:[],'speed').try(:to_i) || 1.4 * 60
   end
 
   def unordered_between?(subject, arg1, arg2)

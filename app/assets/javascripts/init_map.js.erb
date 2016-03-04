@@ -6,16 +6,17 @@ $(document).ready(function(){
   L.mapbox.styleLayer('mapbox://styles/oddityoverseer13/ciju0qw2900073slwb1yxdi25').addTo(App.map);
 
   App.icons = {}
-  App.icons.zombieIcon = L.icon({
-    iconUrl: '<%= asset_data_uri "zombie.png" %>',
-    iconSize:     [16, 16], // size of the icon
-    iconAnchor:   [8, 9], // point of the icon which will correspond to marker's location
-  });
-  App.icons.characterIcon = L.icon({
-    iconUrl: '<%= asset_data_uri "character.png" %>',
-    iconSize:     [24, 24], // size of the icon
-    iconAnchor:   [12, 12], // point of the icon which will correspond to marker's location
-  });
+
+  // App.icons.zombieIcon = L.icon({
+  //   iconUrl: '<%= asset_data_uri "zombie.png" %>',
+  //   iconSize:     [16, 16], // size of the icon
+  //   iconAnchor:   [8, 9], // point of the icon which will correspond to marker's location
+  // });
+  // App.icons.characterIcon = L.icon({
+  //   iconUrl: '<%= asset_data_uri "character.png" %>',
+  //   iconSize:     [24, 24], // size of the icon
+  //   iconAnchor:   [12, 12], // point of the icon which will correspond to marker's location
+  // });
 
 
   App.map.on('contextmenu', function(e) {
