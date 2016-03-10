@@ -21,4 +21,16 @@ body {
       padding-bottom: 0px;
     }
   }
+
+  .zombie-icon {
+    background-size: 24px 24px;
+    background-image: image-url('zombie.png');
+    background-repeat: no-repeat;
+    background-position: right 25px bottom 8px;
+
+    progress {
+      width: 24px;
+      padding-bottom: 0px;
+    }
+  }
 }

@@ -1,3 +1,5 @@
+require_relative '../app/services/zombie_spawner'
+
 class Ticker
   include Singleton
 
@@ -5,11 +7,13 @@ class Ticker
 
   def initialize
     Character.connection
+    @spawner = ZombieSpawner.new
   end
 
   def run
     every_tick do
       Character.all.each { |c| c.tick }
+      # @spawner.spawn
     end
   end
 
