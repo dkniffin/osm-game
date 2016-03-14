@@ -8,6 +8,10 @@ class CharactersChannel < ApplicationCable::Channel
     character(data).move(data['lat'], data['lon'])
   end
 
+  def restore_health(data)
+    character(data).restore_health(data['health'])
+  end
+
   def take_damage(data)
     character(data).take_damage(data['damage'])
   end

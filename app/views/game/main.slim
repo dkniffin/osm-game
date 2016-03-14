@@ -11,9 +11,9 @@
       span.value
         = @character.water
     .dev-console
-      span.key Devs Console:
-      = link_to "Take Damage", "#", id: "view-more-link"
-      /= image_tag('minus.png')
+      span.key Health:
+      = link_to image_tag("plus.png"), "#", id: "restore-health"
+      = link_to image_tag("minus.png"), "#", id: "take-damage"
   .user-actions
     - if signed_in?
       = link_to 'Log out', destroy_user_session_path, method: :delete

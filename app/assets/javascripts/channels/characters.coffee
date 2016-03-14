@@ -76,3 +76,6 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})
+
+  restore_health: (id, h = 5) ->
+    @perform("restore_health", {id: id, health: h})

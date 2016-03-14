@@ -19,6 +19,16 @@ class Character < ActiveRecord::Base
     ActionCable.server.broadcast "characters", { id => self }
   end
 
+  def restore_health(restore)
+    self.health += restore
+    if self.health > 100
+      return 100
+    else
+      self.health
+    end
+    save
+  end
+
   def take_damage(damage)
     self.health -= damage
     if self.health < 0
