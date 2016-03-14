@@ -16,6 +16,14 @@ class CharactersChannel < ApplicationCable::Channel
     character(data).take_damage(data['damage'])
   end
 
+  def restore_food(data)
+    character(data).restore_food(data['health'])
+  end
+
+  def lose_food(data)
+    character(data).lose_food(data['damage'])
+  end
+
   private
 
   def character(data)

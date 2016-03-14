@@ -39,6 +39,26 @@ class Character < ActiveRecord::Base
     save
   end
 
+  def restore_food(restore)
+    self.food += restore
+    if self.food > 100
+      return 100
+    else
+      self.food
+    end
+    save
+  end
+
+  def lose_food(damage)
+    self.food -= damage
+    if self.food < 0
+      return 0
+    else
+      self.food
+    end
+    save
+  end
+
   private
 
   def move_towards(target)
