@@ -10,3 +10,9 @@ $ ->
 
   $('#lose-food').on 'click', ->
     App.characters.lose_food(App.game.selected.data.id)
+
+  $('#restore-water').on 'click', ->
+    App.characters.restore_water(App.game.selected.data.id)
+
+  $('#lose-water').on 'click', ->
+    App.characters.lose_water(App.game.selected.data.id)

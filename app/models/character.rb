@@ -59,6 +59,26 @@ class Character < ActiveRecord::Base
     save
   end
 
+  def restore_water(restore)
+    self.water += restore
+    if self.water > 100
+      return 100
+    else
+      self.water
+    end
+    save
+  end
+
+  def lose_water(damage)
+    self.water -= damage
+    if self.water < 0
+      return 0
+    else
+      self.water
+    end
+    save
+  end
+
   private
 
   def move_towards(target)
