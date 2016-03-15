@@ -2,9 +2,9 @@ module Geographic
   module Point
     extend ActiveSupport::Concern
 
-    included do
-      @@factory = RGeo::Geographic.spherical_factory(srid: 4326)
+    @@factory = RGeo::Geographic.spherical_factory(srid: 4326)
 
+    included do
       # Returns the objects contained in the given box
       scope :inside, -> (raw) {
         # Normalize

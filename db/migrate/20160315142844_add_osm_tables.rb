@@ -71,7 +71,7 @@ class AddOsmTables < ActiveRecord::Migration[5.0]
       t.text     "wood"
       t.integer  "z_order"
       t.float    "way_area"
-      t.geometry "way", limit: {srid: 4326, type: "line_string"}
+      t.geometry "way", limit: { srid: 4326, type: "line_string" }
       t.index ["osm_id"], name: "planet_osm_line_pkey", using: :btree
       t.index ["way"], name: "planet_osm_line_index", using: :gist
     end
