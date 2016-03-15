@@ -94,31 +94,32 @@ shared_examples_for 'a geographic point' do
       end
     end
 
-    context 'accepts an array argument' do
+    context 'with an object' do
       before { object }
-      let(:arg1) { target_point_array }
 
-      it 'returns the object' do
-        expect(subject).to eq(object)
+      context 'with an array argument' do
+        let(:arg1) { target_point_array }
+
+        it 'returns the object' do
+          expect(subject).to eq(object)
+        end
       end
-    end
 
-    context 'accepts lon, lat arguments' do
-      before { object }
-      let(:arg1) { target_point_array[0] }
-      let(:arg2) { target_point_array[1] }
+      context 'with lon, lat arguments' do
+        let(:arg1) { target_point_array[0] }
+        let(:arg2) { target_point_array[1] }
 
-      it 'returns the object' do
-        expect(subject).to eq(object)
+        it 'returns the object' do
+          expect(subject).to eq(object)
+        end
       end
-    end
 
-    context 'accepts an rgeo point argument' do
-      before { object }
-      let(:arg1) { target_point }
+      context 'with an rgeo point argument' do
+        let(:arg1) { target_point }
 
-      it 'returns the object' do
-        expect(subject).to eq(object)
+        it 'returns the object' do
+          expect(subject).to eq(object)
+        end
       end
     end
 
