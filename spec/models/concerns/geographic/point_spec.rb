@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 shared_examples_for 'a geographic point' do |raw_options = {}|
-  let(:default_options) { { point_attribute: :latlng } }
+  let(:default_options) { { point_attribute: :latlng, factory: model.to_s.underscore.to_sym } }
   let(:options) { default_options.merge(raw_options) }
 
   let(:factory) { RGeo::Geographic.spherical_factory(srid: 4326) }
@@ -9,7 +9,7 @@ shared_examples_for 'a geographic point' do |raw_options = {}|
   let(:latlng_array) { [-78.898619, 35.994033] }
   let(:latlng) { factory.point(*latlng_array) }
   let(:object) do
-    FactoryGirl.create(model.to_s.underscore.to_sym, options[:point_attribute] => latlng)
+    FactoryGirl.create(options[:factory], options[:point_attribute] => latlng)
   end
 
   describe '.inside' do
@@ -131,7 +131,9 @@ shared_examples_for 'a geographic point' do |raw_options = {}|
     context 'with 2 objects' do
       before { object }
       let(:object2_latlng) { factory.point(-79.0, 36.0) }
-      let!(:object2) { FactoryGirl.create(model.to_s.underscore.to_sym, latlng: object2_latlng) }
+      let!(:object2) do
+        FactoryGirl.create(options[:factory], options[:point_attribute] => object2_latlng)
+      end
       let(:arg1) { target_point }
 
       it 'returns the closest point' do
