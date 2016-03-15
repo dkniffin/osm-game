@@ -39,10 +39,31 @@ module Geographic
         where(spatial.st_contains(this_point))
       }
 
-      scope :closest_to, -> (lat, lon) {
-        point = RGeo::Geographic.spherical_factory(srid: 4326).point(lon, lat)
-        character = Character.arel_table[:latlng]
-        order(character.st_distance(point.as_text)).first
+      # Returns the object closest to the given coordinates
+      #  coordinates can be given as:
+      #   - Two arguments: lon, lat
+      #   - An array with two elements: [lon, lat]
+      #   - An RGeo point
+      scope :closest_to, -> (arg1, arg2=nil) {
+        # Convert array to two points
+        if arg1.class == Array
+          lon, lat = arg1
+        elsif arg1.class == Float
+          lon, lat = arg1, arg2
+        end
+
+        # Convert points to Rgeo object
+        if lon.present? && lat.present?
+          point = @@factory.point(lon, lat)
+        else
+          point = arg1
+        end
+
+        target_point = Geographic.set_srid(point)
+        this_point = Geographic.set_srid(arel_table[:latlng])
+
+        # Do the query
+        order(target_point.st_distance(this_point)).first
       }
     end
   end
