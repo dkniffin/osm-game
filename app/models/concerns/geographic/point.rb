@@ -12,7 +12,7 @@ module Geographic
 
         # Set the SRID
         spatial = Geographic.set_srid(geometry)
-        this_point = Geographic.set_srid(arel_table[:latlng])
+        this_point = Geographic.set_srid(point_column)
 
         # Do the query
         where(spatial.st_contains(this_point))
@@ -25,11 +25,18 @@ module Geographic
 
         # Set the SRID
         target_point = Geographic.set_srid(rgeo_point)
-        this_point = Geographic.set_srid(arel_table[:latlng])
+        this_point = Geographic.set_srid(point_column)
 
         # Do the query
         order(target_point.st_distance(this_point)).first
       }
+
+      private
+
+      def self.point_column
+        column_sym = self.try(:point_attribute).try(:to_sym) || :latlng
+        arel_table[column_sym]
+      end
     end
   end
 end

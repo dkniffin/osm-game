@@ -1,11 +1,16 @@
 require 'spec_helper'
 
-shared_examples_for 'a geographic point' do
+shared_examples_for 'a geographic point' do |raw_options = {}|
+  let(:default_options) { { point_attribute: :latlng } }
+  let(:options) { default_options.merge(raw_options) }
+
   let(:factory) { RGeo::Geographic.spherical_factory(srid: 4326) }
   let(:model) { described_class }
   let(:latlng_array) { [-78.898619, 35.994033] }
   let(:latlng) { factory.point(*latlng_array) }
-  let(:object) { FactoryGirl.create(model.to_s.underscore.to_sym, latlng: latlng) }
+  let(:object) do
+    FactoryGirl.create(model.to_s.underscore.to_sym, options[:point_attribute] => latlng)
+  end
 
   describe '.inside' do
     let(:hash) { { n: 36.002104, s: 35.978562, e: -78.881578, w: -78.912048 } }
