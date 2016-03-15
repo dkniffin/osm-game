@@ -7,6 +7,24 @@ class Character < ActiveRecord::Base
 
   reverse_geocoded_by :lat, :lon
 
+  def lat
+    latlng.y
+  end
+
+  def lng
+    latlng.x
+  end
+  alias_method :lon, :lng
+
+  def lat=(new_lat)
+    update(latlng: Normalize.to_rgeo_point(lon, new_lat))
+  end
+
+  def lng=(new_lng)
+    update(latlng: Normalize.to_rgeo_point(new_lng, lat))
+  end
+  alias_method :lon=, :lng=
+
   def move(lat, lon)
     unless colides_with_building?(lat, lon)
       update(current_action: :move, action_details: { target_lat: lat, target_lon: lon })

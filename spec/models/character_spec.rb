@@ -95,4 +95,36 @@ describe Character, type: :model do
       expect(subject.water).to eq(0)
     end
   end
+
+  context do
+    before { subject.update(latlng: Normalize.to_rgeo_point(-105.0, 35.0)) }
+
+    describe '#lat' do
+      it 'returns the latitude' do
+        expect(subject.lat).to eq(35.0)
+      end
+    end
+
+    describe '#lng' do
+      it 'returns the longitude' do
+        expect(subject.lng).to eq(-105.0)
+      end
+    end
+
+    describe '#lat=' do
+      let(:new_lat) { 34.0 }
+      it 'updates the latitude' do
+        subject.lat = new_lat
+        expect(subject.lat).to eq(new_lat)
+      end
+    end
+
+    describe '#lng=' do
+      let(:new_lng) { -104.0 }
+      it 'updates the longitude' do
+        subject.lng = new_lng
+        expect(subject.lng).to eq(new_lng)
+      end
+    end
+  end
 end
