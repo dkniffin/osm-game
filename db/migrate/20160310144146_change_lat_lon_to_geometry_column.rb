@@ -1,5 +1,7 @@
 class ChangeLatLonToGeometryColumn < ActiveRecord::Migration[5.0]
   def change
+    enable_extension "postgis"
+
     factory = RGeo::Geographic.spherical_factory(srid: 4326)
 
     # Characters
