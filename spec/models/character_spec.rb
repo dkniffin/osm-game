@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Character, type: :model do
+describe Character, type: :model do
   subject { create(:character) }
 
   it { is_expected.to respond_to(:name) }
