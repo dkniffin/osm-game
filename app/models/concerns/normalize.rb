@@ -49,12 +49,37 @@ module Normalize
 
     # Convert 2D array of floats to polygon
     if outline.present?
-      points = outline.map { |p| @@factory.point(*p) }
-      geometry = @@factory.polygon(@@factory.line_string(points))
+      line_string = to_rgeo_line_string(outline)
+      geometry = @@factory.polygon(line_string)
     else
       geometry = raw
     end
 
     geometry
+  end
+
+  # Input:
+  #  - Two arguments, each one a point allowed by to_rgeo_point
+  #  - An array of two elements, each one a point allowed by to_rgeo_point
+  #  - An rgeo line_string
+  # Output:
+  #  An rgeo line_string
+  def self.to_rgeo_line_string(arg1, arg2 = nil)
+    # Convert two arguments to an array
+    if arg2.present?
+      points = [arg1, arg2]
+    else
+      points = arg1
+    end
+
+    # Convert array of points to a linestring
+    if points.class == Array
+      rgeo_points = points.map { |p| to_rgeo_point(p) }
+      line_string = @@factory.line_string(rgeo_points)
+    else
+      line_string = points
+    end
+
+    line_string
   end
 end

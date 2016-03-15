@@ -50,7 +50,7 @@ class Character < ActiveRecord::Base
 
   def colides_with_building?(target_lat, target_lon)
     target = RGeo::Geographic.spherical_factory(srid: 4326).point(target_lon, target_lat)
-    OSM::Way.buildings.is_intersected_by_line(latlng, target).present?
+    OSM::Way.buildings.intersected_by_line(latlng, target).present?
   end
 
   def speed

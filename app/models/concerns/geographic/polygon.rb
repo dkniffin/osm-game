@@ -17,11 +17,16 @@ module Geographic
       }
 
       # Returns the objects that intersect with the given line
-      scope :intersected_by_line, -> (start_point, end_point) {
-        line = RGeo::Geographic.spherical_factory(srid: 4326).line(start_point, end_point)
-        spatial = Arel.spatial(line.as_text).st_function(:ST_SetSRID, 4326)
-        matcher = geometry_column.st_function(:ST_Transform, 4326).st_intersects(spatial)
-        where(matcher)
+      scope :intersected_by_line, -> (arg1, arg2 = nil) {
+        # Normalize
+        rgeo_line = Normalize.to_rgeo_line_string(arg1, arg2)
+
+        # Set SRID
+        line = Geographic.set_srid(rgeo_line)
+        geometry = Geographic.set_srid(geometry_column)
+
+        # Do the Query
+        where(geometry.st_intersects(line))
       }
     end
 
