@@ -15,11 +15,10 @@ ActiveRecord::Schema.define(version: 20160315142844) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
-  enable_extension "postgis"
   enable_extension "hstore"
+  enable_extension "postgis"
 
   create_table "characters", force: :cascade do |t|
-
     t.string   "name"
     t.boolean  "player"
     t.hstore   "stats"
@@ -367,4 +366,5 @@ ActiveRecord::Schema.define(version: 20160315142844) do
     t.index ["email"], name: "index_users_on_email", unique: true, using: :btree
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true, using: :btree
   end
+
 end

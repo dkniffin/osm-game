@@ -69,9 +69,7 @@ shared_examples_for 'a geographic polygon' do |raw_options = {}|
       let(:arg1) { target_point_array }
 
       it 'returns the ones that contain the point' do
-        expect(subject.ids).to include(object.id)
-        expect(subject.ids).to include(object2.id)
-        expect(subject.ids).to_not include(object3.id)
+        expect(subject.ids).to contain_exactly(object.id, object2.id)
       end
     end
   end

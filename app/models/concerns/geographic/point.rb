@@ -19,7 +19,7 @@ module Geographic
       }
 
       # Returns the object closest to the given coordinates
-      scope :closest_to, -> (arg1, arg2=nil) {
+      scope :closest_to, -> (arg1, arg2 = nil) {
         # Normalize
         rgeo_point = Normalize.to_rgeo_point(arg1, arg2)
 
