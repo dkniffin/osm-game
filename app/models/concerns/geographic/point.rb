@@ -30,12 +30,19 @@ module Geographic
         # Do the query
         order(target_point.st_distance(this_point)).first
       }
+    end
+
+    module ClassMethods
+      attr_reader :point_attribute
 
       private
 
-      def self.point_column
-        column_sym = self.try(:point_attribute).try(:to_sym) || :latlng
-        arel_table[column_sym]
+      def point_attribute(point_attribute = :latlng)
+        @point_attribute = point_attribute
+      end
+
+      def point_column
+        arel_table[@point_attribute.to_sym]
       end
     end
   end

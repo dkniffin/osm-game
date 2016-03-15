@@ -4,6 +4,7 @@ module OSM
 
     self.table_name = 'planet_osm_point'
     self.primary_key = 'osm_id'
-    self.point_attribute = 'way'
+
+    point_attribute :way
   end
 end
