@@ -18,6 +18,7 @@ RSpec.describe Character, type: :model do
   end
 
   describe '#take_damage' do
+    before { subject.update(health: 100) }
     it 'subtracts from the total health' do
       subject.take_damage(10)
       expect(subject.health).to eq(90)
