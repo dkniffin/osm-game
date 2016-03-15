@@ -1,5 +1,7 @@
 class AddOsmTables < ActiveRecord::Migration[5.0]
   def change
+    enable_extension "postgis"
+
     create_table "planet_osm_line", id: false, force: :cascade do |t|
       t.integer  "osm_id", limit: 8
       t.text     "access"
