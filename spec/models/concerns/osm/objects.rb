@@ -9,8 +9,8 @@ shared_examples_for 'an osm object' do |options = {}|
     let!(:non_buildings) { invalid_building_values.map { |v| create(factory, building: v) } }
 
     it 'only includes buildings' do
-      expect(model.buildings.ids).to include(*buildings.map { |o| o.id })
-      expect(model.buildings.ids).to_not include(*non_buildings.map { |o| o.id })
+      expect(model.buildings.ids).to include(*buildings.map(&:id))
+      expect(model.buildings.ids).to_not include(*non_buildings(&:id))
     end
   end
 end

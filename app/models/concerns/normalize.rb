@@ -15,14 +15,15 @@ module Normalize
     if arg1.class == Array
       lon, lat = arg1
     elsif arg1.class == Float
-      lon, lat = arg1, arg2
+      lon = arg1
+      lat = arg2
     end
 
     # Convert points to Rgeo object
-    if lon.present? && lat.present?
-      point = @@factory.point(lon, lat)
+    point = if lon.present? && lat.present?
+      @@factory.point(lon, lat)
     else
-      point = arg1
+      arg1
     end
 
     point
@@ -36,23 +37,23 @@ module Normalize
   #  An rgeo polygon
   def self.to_rgeo_polygon(raw)
     # Convert hash to 2D array
-    if raw.class == Hash
-      outline = [
+    outline = if raw.class == Hash
+      [
         [raw[:w], raw[:n]],
         [raw[:e], raw[:n]],
         [raw[:e], raw[:s]],
         [raw[:w], raw[:s]]
       ]
     elsif raw.class == Array
-      outline = raw
+      raw
     end
 
     # Convert 2D array of floats to polygon
-    if outline.present?
+    geometry = if outline.present?
       line_string = to_rgeo_line_string(outline)
-      geometry = @@factory.polygon(line_string)
+      @@factory.polygon(line_string)
     else
-      geometry = raw
+      raw
     end
 
     geometry
@@ -66,18 +67,14 @@ module Normalize
   #  An rgeo line_string
   def self.to_rgeo_line_string(arg1, arg2 = nil)
     # Convert two arguments to an array
-    if arg2.present?
-      points = [arg1, arg2]
-    else
-      points = arg1
-    end
+    points = arg2.present? ? [arg1, arg2] : arg1
 
     # Convert array of points to a linestring
-    if points.class == Array
+    line_string = if points.class == Array
       rgeo_points = points.map { |p| to_rgeo_point(p) }
-      line_string = @@factory.line_string(rgeo_points)
+      @@factory.line_string(rgeo_points)
     else
-      line_string = points
+      points
     end
 
     line_string

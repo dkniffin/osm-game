@@ -1,5 +1,5 @@
 shared_examples_for 'a geographic polygon' do |raw_options = {}|
-  let(:default_options) { { geometry_attribute: :geometry, factory: model.to_s.underscore.to_sym} }
+  let(:default_options) { { geometry_attribute: :geometry, factory: model.to_s.underscore.to_sym } }
   let(:options) { default_options.merge(raw_options) }
 
   let(:factory) { RGeo::Geographic.spherical_factory(srid: 4326) }
