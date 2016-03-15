@@ -20,63 +20,39 @@ class Character < ActiveRecord::Base
   end
 
   def restore_health(restore)
-    self.health += restore
-    if self.health > 100
-      return 100
-    else
-      self.health
-    end
-    save
+    new_health = self.health += restore
+    new_health = 100 if new_health > 100
+    update(health: new_health)
   end
 
   def take_damage(damage)
-    self.health -= damage
-    if self.health < 0
-      return 0
-    else
-      self.health
-    end
-    save
+    new_health = self.health -= damage
+    new_health = 0 if new_health < 0
+    update(health: new_health)
   end
 
   def restore_food(restore)
-    self.food += restore
-    if self.food > 100
-      return 100
-    else
-      self.food
-    end
-    save
+    new_food = self.food += restore
+    new_food = 100 if new_food > 100
+    update(food: new_food)
   end
 
   def lose_food(damage)
-    self.food -= damage
-    if self.food < 0
-      return 0
-    else
-      self.food
-    end
-    save
+    new_food = self.food -= damage
+    new_food = 0 if new_food < 0
+    update(food: new_food)
   end
 
   def restore_water(restore)
-    self.water += restore
-    if self.water > 100
-      return 100
-    else
-      self.water
-    end
-    save
+    new_water = self.water += restore
+    new_water = 100 if new_water > 100
+    update(water: new_water)
   end
 
   def lose_water(damage)
-    self.water -= damage
-    if self.water < 0
-      return 0
-    else
-      self.water
-    end
-    save
+    new_water = self.water -= damage
+    new_water = 0 if new_water < 0
+    update(water: new_water)
   end
 
   private
