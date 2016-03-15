@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 shared_examples_for 'a geographic point' do |raw_options = {}|
   let(:default_options) { { point_attribute: :latlng, factory: model.to_s.underscore.to_sym } }
   let(:options) { default_options.merge(raw_options) }

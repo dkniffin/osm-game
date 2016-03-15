@@ -42,7 +42,8 @@ module Geographic
       end
 
       def point_column
-        arel_table[@point_attribute.to_sym]
+        attr_sym = @point_attribute.try(:to_sym) || :latlng
+        arel_table[attr_sym]
       end
     end
   end

@@ -40,7 +40,8 @@ module Geographic
       end
 
       def geometry_column
-        arel_table[@geometry_attribute.to_sym]
+        attr_sym = @geometry_attribute.try(:to_sym) || :geometry
+        arel_table[attr_sym]
       end
     end
   end
