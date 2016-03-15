@@ -32,8 +32,8 @@ module Geographic
         end
 
         # Set the SRID
-        spatial = Arel.spatial(geometry.as_text).st_function(:ST_SetSRID, 4326)
-        this_point = arel_table[:latlng].st_function(:ST_Transform, 4326)
+        spatial = Geographic.set_srid(geometry)
+        this_point = Geographic.set_srid(arel_table[:latlng])
 
         # Do the query
         where(spatial.st_contains(this_point))
