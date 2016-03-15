@@ -20,7 +20,7 @@ gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
 
 group :development, :test do
   gem 'pry-byebug'
-  gem 'rspec-rails'
+  gem 'rspec-rails', '~> 3.5.0.beta1'
   gem 'factory_girl_rails'
   gem 'faker'
 end
