@@ -11,11 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-<<<<<<< HEAD
-ActiveRecord::Schema.define(version: 20160302012924) do
-=======
 ActiveRecord::Schema.define(version: 20160310144146) do
->>>>>>> c5ba02d... Convert lat/lon to postgis geometry columns
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,17 +19,18 @@ ActiveRecord::Schema.define(version: 20160310144146) do
   enable_extension "hstore"
 
   create_table "characters", force: :cascade do |t|
-    t.string    "name"
-    t.boolean   "player"
-    t.hstore    "stats"
-    t.datetime  "created_at",                                                                               null: false
-    t.datetime  "updated_at",                                                                               null: false
-    t.string    "current_action"
-    t.hstore    "action_details"
-    t.integer   "health",                                                                     default: 100
-    t.integer   "water",                                                                      default: 100
-    t.integer   "food",                                                                       default: 100
-    t.geography "latlng",         limit: {:srid=>4326, :type=>"geometry", :geographic=>true}
+
+    t.string   "name"
+    t.boolean  "player"
+    t.hstore   "stats"
+    t.datetime "created_at",                                                         null: false
+    t.datetime "updated_at",                                                         null: false
+    t.string   "current_action"
+    t.hstore   "action_details"
+    t.integer  "health",                                               default: 100
+    t.integer  "water",                                                default: 100
+    t.integer  "food",                                                 default: 100
+    t.geometry "latlng",         limit: {:srid=>0, :type=>"geometry"}
   end
 
   create_table "users", force: :cascade do |t|
@@ -52,15 +49,4 @@ ActiveRecord::Schema.define(version: 20160310144146) do
     t.index ["email"], name: "index_users_on_email", unique: true, using: :btree
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true, using: :btree
   end
-
-<<<<<<< HEAD
-=======
-  create_table "zombies", force: :cascade do |t|
-    t.integer   "health"
-    t.datetime  "created_at",                                                             null: false
-    t.datetime  "updated_at",                                                             null: false
-    t.geography "latlng",     limit: {:srid=>4326, :type=>"geometry", :geographic=>true}
-  end
-
->>>>>>> c5ba02d... Convert lat/lon to postgis geometry columns
 end

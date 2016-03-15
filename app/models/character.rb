@@ -3,6 +3,8 @@ class Character < ActiveRecord::Base
   include Geocoder::Calculations
   validates :name, presence: true
 
+  include Geographic::Point
+
   reverse_geocoded_by :lat, :lon
 
   def move(lat, lon)
