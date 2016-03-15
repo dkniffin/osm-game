@@ -19,40 +19,14 @@ class Character < ActiveRecord::Base
     ActionCable.server.broadcast "characters", { id => self }
   end
 
-  def restore_health(restore)
-    new_health = self.health += restore
-    new_health = 100 if new_health > 100
-    update(health: new_health)
-  end
-
   def take_damage(damage)
-    new_health = self.health -= damage
-    new_health = 0 if new_health < 0
-    update(health: new_health)
-  end
-
-  def restore_food(restore)
-    new_food = self.food += restore
-    new_food = 100 if new_food > 100
-    update(food: new_food)
-  end
-
-  def lose_food(damage)
-    new_food = self.food -= damage
-    new_food = 0 if new_food < 0
-    update(food: new_food)
-  end
-
-  def restore_water(restore)
-    new_water = self.water += restore
-    new_water = 100 if new_water > 100
-    update(water: new_water)
-  end
-
-  def lose_water(damage)
-    new_water = self.water -= damage
-    new_water = 0 if new_water < 0
-    update(water: new_water)
+    self.health -= damage
+    if self.health < 0
+      return 0
+    else
+      self.health
+    end
+    save
   end
 
   private
