@@ -3,6 +3,8 @@ class Character < ActiveRecord::Base
   include Geocoder::Calculations
   validates :name, presence: true
 
+  include Geographic::Point
+
   reverse_geocoded_by :lat, :lon
 
   def move(lat, lon)
@@ -73,7 +75,8 @@ class Character < ActiveRecord::Base
   end
 
   def colides_with_building?(target_lat, target_lon)
-    OSM::Way.buildings.is_intersected_by_line([lat, lon], [target_lat, target_lon]).present?
+    target = RGeo::Geographic.spherical_factory(srid: 4326).point(target_lon, target_lat)
+    OSM::Way.buildings.intersected_by_line(latlng, target).present?
   end
 
   def speed
