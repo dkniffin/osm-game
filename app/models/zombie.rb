@@ -5,6 +5,7 @@ class Zombie < ApplicationRecord
   AGGRO_DISTANCE = 0.1 # km
   ATTACK_RANGE = 0.001 # km
   ATTACK_DAMAGE = 5
+  ATTACK_SPEED = 10
 
   def speed
     1.0 * 60
@@ -16,7 +17,7 @@ class Zombie < ApplicationRecord
     end
   end
 
-  def tick
+  def tick(tick_count)
     case current_action
     when 'move'
       move_towards([action_details['target_lat'], action_details['target_lon']])
@@ -24,7 +25,9 @@ class Zombie < ApplicationRecord
       look_for_targets
     end
 
-    attack_target_in_range
+    if tick_count % ATTACK_SPEED == 0
+      attack_target_in_range
+    end
 
     broadcast_updates
   end
@@ -35,6 +38,7 @@ class Zombie < ApplicationRecord
     attack_box = Geographic::Polygon.box_center_radius({ lat: lat, lon: lon }, ATTACK_RANGE)
     closest_character_in_range = Character.inside(attack_box).closest_to(latlng)
     if closest_character_in_range.present?
+      puts 'Attacking'
       closest_character_in_range.take_damage(ATTACK_DAMAGE)
     end
   end

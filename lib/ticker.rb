@@ -11,10 +11,13 @@ class Ticker
   end
 
   def run
+    tick_count = 0
     every_tick do
-      Character.all.each { |c| c.tick }
+      tick_count += 1
+      puts "tick_count: #{tick_count}"
+      Character.all.each { |c| c.tick(tick_count) }
       # @spawner.spawn
-      Zombie.all.each { |z| z.tick }
+      Zombie.all.each { |z| z.tick(tick_count) }
     end
   end
 

@@ -6,7 +6,7 @@ class Character < ActiveRecord::Base
 
   reverse_geocoded_by :lat, :lon
 
-  def tick
+  def tick(tick_count)
     case current_action
     when 'move'
       move_towards([action_details['target_lat'], action_details['target_lon']])
