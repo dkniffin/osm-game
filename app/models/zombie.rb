@@ -3,6 +3,8 @@ class Zombie < ApplicationRecord
   include Game::Unit
 
   AGGRO_DISTANCE = 0.1 # km
+  ATTACK_RANGE = 0.001 # km
+  ATTACK_DAMAGE = 5
 
   def speed
     1.0 * 60
@@ -22,10 +24,20 @@ class Zombie < ApplicationRecord
       look_for_targets
     end
 
+    attack_target_in_range
+
     broadcast_updates
   end
 
   private
+
+  def attack_target_in_range
+    attack_box = Geographic::Polygon.box_center_radius({ lat: lat, lon: lon }, ATTACK_RANGE)
+    closest_character_in_range = Character.inside(attack_box).closest_to(latlng)
+    if closest_character_in_range.present?
+      closest_character_in_range.take_damage(ATTACK_DAMAGE)
+    end
+  end
 
   def look_for_targets
     aggro_box = Geographic::Polygon.box_center_radius({ lat: lat, lon: lon }, AGGRO_DISTANCE)
