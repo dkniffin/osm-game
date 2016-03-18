@@ -1,26 +1,11 @@
 module OSM
-  class Way < OSM::Base
+  class Way < ActiveRecord::Base
+    include Geographic::Polygon
+    include OSM::Objects
+
     self.table_name = 'planet_osm_polygon'
     self.primary_key = 'osm_id'
 
-    scope :containing_point, -> (lat, lon) {
-      point = RGeo::Geographic.spherical_factory(srid: 4326).point(lon, lat)
-      spatial = Arel.spatial(point.as_text).st_function(:ST_SetSRID, 4326)
-      matcher = OSM::Way.arel_table[:way].st_function(:ST_Transform, 4326).st_contains(spatial)
-      where(matcher)
-    }
-
-    scope :is_intersected_by_line, -> (start_point, end_point) {
-      line = RGeo::Geographic.spherical_factory(srid: 4326).line(start_point, end_point)
-      spatial = Arel.spatial(line.as_text).st_function(:ST_SetSRID, 4326)
-      matcher = OSM::Way.arel_table[:way].st_function(:ST_Transform, 4326).st_intersects(spatial)
-      where(matcher)
-    }
-
-    def nodes
-      read_attribute(:nodes).map do |node_id|
-        Node.find(node_id)
-      end
-    end
+    geometry_attribute :way
   end
 end

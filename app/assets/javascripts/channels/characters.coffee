@@ -30,6 +30,8 @@ class Character
     @marker.setLatLng([data['lat'], data['lon']])
     @data = data
     $('.header .health .value').html(data.health)
+    $('.header .food .value').html(data.food)
+    $('.header .water .value').html(data.water)
 
   select: (e) ->
     App.game.selected = this
@@ -76,3 +78,19 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})
+
+  restore_health: (id, h = 5) ->
+    @perform("restore_health", {id: id, health: h})
+
+  restore_food: (id, h = 5) ->
+    @perform("restore_food", {id: id, health: h})
+
+  lose_food: (id, d = 5) ->
+    @perform("lose_food", {id: id, damage: d})
+
+  restore_water: (id, h = 5) ->
+    @perform("restore_water", {id: id, health: h})
+
+  lose_water: (id, d = 5) ->
+    @perform("lose_water", {id: id, damage: d})
+

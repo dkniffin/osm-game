@@ -1,13 +1,14 @@
 require 'rails_helper'
 
-RSpec.describe Character, type: :model do
+describe Character, type: :model do
   subject { create(:character) }
 
   it { is_expected.to respond_to(:name) }
-  it { is_expected.to respond_to(:lat) }
-  it { is_expected.to respond_to(:lon) }
+  it { is_expected.to respond_to(:latlng) }
   it { is_expected.to respond_to(:player) }
   it { is_expected.to respond_to(:stats) }
+
+  it_behaves_like 'a geographic point'
 
   context 'when name is empty' do
     subject { build(:character, name: nil) }
@@ -18,20 +19,111 @@ RSpec.describe Character, type: :model do
   end
 
   describe '#take_damage' do
-    before { subject.take_damage(amount) }
+    before { subject.update(health: 100) }
+    it 'subtracts from the total health' do
+      subject.take_damage(10)
+      expect(subject.health).to eq(90)
+    end
 
-    context 'valid amount' do
-      let(:amount) { 10 }
+    it 'cannot drop below 0' do
+      subject.take_damage(1000)
+      expect(subject.health).to eq(0)
+    end
+  end
 
-      it 'subtract from the total health' do
-        expect(subject.health).to eq(90)
+  describe '#restore_health' do
+    before { subject.update(health: 50) }
+    it 'adds to the total health' do
+      subject.restore_health(10)
+      expect(subject.health).to eq(60)
+    end
+
+    it 'cannot go above 100' do
+      subject.restore_health(1000)
+      expect(subject.health).to eq(100)
+    end
+  end
+
+  describe '#restore_food' do
+    before { subject.update(food: 20) }
+    it 'adds to the total food' do
+      subject.restore_food(40)
+      expect(subject.food).to eq(60)
+    end
+
+    it 'cannot go above 100' do
+      subject.restore_food(600)
+      expect(subject.food).to eq(100)
+    end
+  end
+
+  describe '#lose_food' do
+    before { subject.update(food: 10) }
+    it 'subtracts from the total food' do
+      subject.lose_food(10)
+      expect(subject.food).to eq(0)
+    end
+
+    it 'cannot drop below 0' do
+      subject.lose_food(10)
+      expect(subject.food).to eq(0)
+    end
+  end
+
+  describe '#restore_water' do
+    before { subject.update(water: 30) }
+    it 'adds to the total water' do
+      subject.restore_water(60)
+      expect(subject.water).to eq(90)
+    end
+
+    it 'cannot go above 100' do
+      subject.restore_water(99)
+      expect(subject.water).to eq(100)
+    end
+  end
+
+  describe '#lose_water' do
+    before { subject.update(water: 100) }
+    it 'subtracts from the total water' do
+      subject.lose_water(1)
+      expect(subject.water).to eq(99)
+    end
+
+    it 'cannot drop below 0' do
+      subject.lose_water(1000)
+      expect(subject.water).to eq(0)
+    end
+  end
+
+  context do
+    before { subject.update(latlng: Normalize.to_rgeo_point(-105.0, 35.0)) }
+
+    describe '#lat' do
+      it 'returns the latitude' do
+        expect(subject.lat).to eq(35.0)
       end
     end
 
-    context 'valid amount' do
-      let(:amount) { 100 }
-      it 'cannot drop below 0' do
-        expect(subject.health).to eq(0)
+    describe '#lng' do
+      it 'returns the longitude' do
+        expect(subject.lng).to eq(-105.0)
+      end
+    end
+
+    describe '#lat=' do
+      let(:new_lat) { 34.0 }
+      it 'updates the latitude' do
+        subject.lat = new_lat
+        expect(subject.lat).to eq(new_lat)
+      end
+    end
+
+    describe '#lng=' do
+      let(:new_lng) { -104.0 }
+      it 'updates the longitude' do
+        subject.lng = new_lng
+        expect(subject.lng).to eq(new_lng)
       end
     end
   end

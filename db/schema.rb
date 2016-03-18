@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160310144146) do
+ActiveRecord::Schema.define(version: 20160315142844) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -19,17 +19,17 @@ ActiveRecord::Schema.define(version: 20160310144146) do
   enable_extension "hstore"
 
   create_table "characters", force: :cascade do |t|
-    t.string    "name"
-    t.boolean   "player"
-    t.hstore    "stats"
-    t.datetime  "created_at",                                                                               null: false
-    t.datetime  "updated_at",                                                                               null: false
-    t.string    "current_action"
-    t.hstore    "action_details"
-    t.integer   "health",                                                                     default: 100
-    t.integer   "water",                                                                      default: 100
-    t.integer   "food",                                                                       default: 100
-    t.geography "latlng",         limit: {:srid=>4326, :type=>"geometry", :geographic=>true}
+    t.string   "name"
+    t.boolean  "player"
+    t.hstore   "stats"
+    t.datetime "created_at",                                                         null: false
+    t.datetime "updated_at",                                                         null: false
+    t.string   "current_action"
+    t.hstore   "action_details"
+    t.integer  "health",                                               default: 100
+    t.integer  "water",                                                default: 100
+    t.integer  "food",                                                 default: 100
+    t.geometry "latlng",         limit: {:srid=>0, :type=>"geometry"}
   end
 
   create_table "planet_osm_line", id: false, force: :cascade do |t|
@@ -101,7 +101,7 @@ ActiveRecord::Schema.define(version: 20160310144146) do
     t.text     "wood"
     t.integer  "z_order"
     t.float    "way_area"
-    t.geometry "way",                limit: {:srid=>900913, :type=>"line_string"}
+    t.geometry "way",                limit: {:srid=>4326, :type=>"line_string"}
     t.index ["osm_id"], name: "planet_osm_line_pkey", using: :btree
     t.index ["way"], name: "planet_osm_line_index", using: :gist
   end
@@ -182,7 +182,7 @@ ActiveRecord::Schema.define(version: 20160310144146) do
     t.text     "width"
     t.text     "wood"
     t.integer  "z_order"
-    t.geometry "way",                limit: {:srid=>900913, :type=>"point"}
+    t.geometry "way",                limit: {:srid=>4326, :type=>"point"}
     t.index ["osm_id"], name: "planet_osm_point_pkey", using: :btree
     t.index ["way"], name: "planet_osm_point_index", using: :gist
   end
@@ -256,7 +256,7 @@ ActiveRecord::Schema.define(version: 20160310144146) do
     t.text     "wood"
     t.integer  "z_order"
     t.float    "way_area"
-    t.geometry "way",                limit: {:srid=>900913, :type=>"geometry"}
+    t.geometry "way",                limit: {:srid=>4326, :type=>"geometry"}
     t.index ["osm_id"], name: "planet_osm_polygon_pkey", using: :btree
     t.index ["way"], name: "planet_osm_polygon_index", using: :gist
   end
@@ -339,7 +339,7 @@ ActiveRecord::Schema.define(version: 20160310144146) do
     t.text     "wood"
     t.integer  "z_order"
     t.float    "way_area"
-    t.geometry "way",                limit: {:srid=>900913, :type=>"line_string"}
+    t.geometry "way",                limit: {:srid=>4326, :type=>"line_string"}
     t.index ["osm_id"], name: "planet_osm_roads_pkey", using: :btree
     t.index ["way"], name: "planet_osm_roads_index", using: :gist
   end
