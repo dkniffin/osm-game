@@ -9,6 +9,7 @@ class Zombie
     @_zombies[id]
 
   @upsert: (id, data) ->
+    data = JSON.parse(data)
     if @_zombies[id] == undefined
       console.debug('making new zombie')
       @_zombies[id] = new Zombie(data)

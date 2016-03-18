@@ -368,10 +368,10 @@ ActiveRecord::Schema.define(version: 20160315142844) do
   end
 
   create_table "zombies", force: :cascade do |t|
-    t.integer   "health"
-    t.datetime  "created_at",                                                             null: false
-    t.datetime  "updated_at",                                                             null: false
-    t.geography "latlng",     limit: {:srid=>4326, :type=>"geometry", :geographic=>true}
+    t.integer  "health"
+    t.geometry "latlng",     limit: {:srid=>0, :type=>"geometry"}
+    t.datetime "created_at",                                       null: false
+    t.datetime "updated_at",                                       null: false
   end
 
 end

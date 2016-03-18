@@ -30,6 +30,26 @@ module Geographic
         # Do the query
         order(target_point.st_distance(this_point)).first
       }
+
+      def lat
+        latlng.y
+      end
+
+      def lng
+        latlng.x
+      end
+      alias_method :lon, :lng
+
+      def lat=(new_lat)
+        new_lng = latlng.try(:x) || 0.0
+        update(latlng: Normalize.to_rgeo_point(new_lng, new_lat))
+      end
+
+      def lng=(new_lng)
+        new_lat = latlng.try(:y) || 0.0
+        update(latlng: Normalize.to_rgeo_point(new_lng, new_lat))
+      end
+      alias_method :lon=, :lng=
     end
 
     module ClassMethods

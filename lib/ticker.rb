@@ -14,6 +14,7 @@ class Ticker
     every_tick do
       Character.all.each { |c| c.tick }
       # @spawner.spawn
+      Zombie.all.each { |z| z.tick }
     end
   end
 

@@ -44,5 +44,17 @@ module Geographic
         arel_table[attr_sym]
       end
     end
+
+    # Returns an object with n, s, e, w forming a square with the middle at center
+    # ({lat: lat, lon: lon}), and with a given radius (in km)
+    def self.box_center_radius(center, radius)
+      center_point = [center[:lat], center[:lon]]
+      {
+        n: Geocoder::Calculations.endpoint(center_point, 0, radius)[0],
+        e: Geocoder::Calculations.endpoint(center_point, 90, radius)[1],
+        s: Geocoder::Calculations.endpoint(center_point, 180, radius)[0],
+        w: Geocoder::Calculations.endpoint(center_point, -90, radius)[1]
+      }
+    end
   end
 end
