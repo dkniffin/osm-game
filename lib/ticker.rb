@@ -3,7 +3,7 @@ require_relative '../app/services/zombie_spawner'
 class Ticker
   include Singleton
 
-  TICK_TIME = 1.second
+  TICK_TIME = 0.1.seconds
 
   def initialize
     Character.connection

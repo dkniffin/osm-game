@@ -23,6 +23,7 @@ module OsmGame
     # -- all .rb files in that directory are automatically loaded.
     config.autoload_paths += %W(
       #{config.root}/app/models/concerns
+      #{config.root}/lib
     )
   end
 end

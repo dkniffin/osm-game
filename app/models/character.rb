@@ -57,6 +57,15 @@ class Character < ActiveRecord::Base
     update(water: new_water)
   end
 
+  def speed
+    # Units: meters/second
+    stats.try(:[], 'speed').try(:to_i) || 1.4
+  end
+
+  def speed_per_tick
+    speed.to(1.meter.per.send(::Ticker::TICK_TIME.parts[0][0]))
+  end
+
   private
 
   def move_towards(target)
@@ -77,11 +86,6 @@ class Character < ActiveRecord::Base
   def colides_with_building?(target_lat, target_lon)
     target = RGeo::Geographic.spherical_factory(srid: 4326).point(target_lon, target_lat)
     OSM::Way.buildings.intersected_by_line(latlng, target).present?
-  end
-
-  def speed
-    # Units: meters/second
-    stats.try(:[], 'speed').try(:to_i) || 1.4 * 60
   end
 
   def unordered_between?(subject, arg1, arg2)
