@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160315142844) do
+ActiveRecord::Schema.define(version: 20160318193729) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -369,9 +369,11 @@ ActiveRecord::Schema.define(version: 20160315142844) do
 
   create_table "zombies", force: :cascade do |t|
     t.integer  "health"
-    t.geometry "latlng",     limit: {:srid=>0, :type=>"geometry"}
-    t.datetime "created_at",                                       null: false
-    t.datetime "updated_at",                                       null: false
+    t.geometry "latlng",         limit: {:srid=>0, :type=>"geometry"}
+    t.datetime "created_at",                                           null: false
+    t.datetime "updated_at",                                           null: false
+    t.string   "current_action"
+    t.hstore   "action_details"
   end
 
 end
