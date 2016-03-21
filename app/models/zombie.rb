@@ -3,7 +3,7 @@ class Zombie < ApplicationRecord
   include Game::Unit
 
   AGGRO_DISTANCE = 0.1 # km
-  ATTACK_RANGE = 0.001 # km
+  ATTACK_RANGE = 0.01 # km
   ATTACK_DAMAGE = 5
   ATTACK_SPEED = 10
 
@@ -18,40 +18,24 @@ class Zombie < ApplicationRecord
   end
 
   def tick(tick_count)
-    case current_action
-    when 'move'
-      move_towards([action_details['target_lat'], action_details['target_lon']])
-    else
-      look_for_targets
+    char = Character.closest_to(lat, lon)
+    if latlng.distance(char.latlng) * 100 <= ATTACK_RANGE
+      attack_character(char, tick_count)
+    elsif latlng.distance(char.latlng) * 100 <= AGGRO_DISTANCE
+      move_towards([char.lat, char.lon])
     end
-
-    if tick_count % ATTACK_SPEED == 0
-      attack_target_in_range
-    end
-
     broadcast_updates
   end
 
   private
 
-  def attack_target_in_range
-    attack_box = Geographic::Polygon.box_center_radius({ lat: lat, lon: lon }, ATTACK_RANGE)
-    closest_character_in_range = Character.inside(attack_box).closest_to(latlng)
-    if closest_character_in_range.present?
-      puts 'Attacking'
-      closest_character_in_range.take_damage(ATTACK_DAMAGE)
-    end
-  end
-
-  def look_for_targets
-    aggro_box = Geographic::Polygon.box_center_radius({ lat: lat, lon: lon }, AGGRO_DISTANCE)
-    closest_character_in_range = Character.inside(aggro_box).closest_to(latlng)
-    if closest_character_in_range.present?
-      move(closest_character_in_range.lat, closest_character_in_range.lon)
+  def attack_character(char, tick_count)
+    if tick_count % ATTACK_SPEED == 0
+      char.take_damage(ATTACK_DAMAGE)
     end
   end
 
   def broadcast_updates
-    ActionCable.server.broadcast "zombies", id => self.to_json(methods: [:lat, :lon])
+    ActionCable.server.broadcast "zombies", id => to_json(methods: [:lat, :lon])
   end
 end

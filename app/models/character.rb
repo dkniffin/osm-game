@@ -6,12 +6,13 @@ class Character < ActiveRecord::Base
 
   reverse_geocoded_by :lat, :lon
 
-  def tick(tick_count)
-    case current_action
-    when 'move'
-      move_towards([action_details['target_lat'], action_details['target_lon']])
+  def tick(_)
+    if current_action.present?
+      if current_action == 'move'
+        move_towards([action_details['target_lat'], action_details['target_lon']])
+      end
     end
-    ActionCable.server.broadcast "characters", id => self.to_json(methods: [:lat, :lon])
+    ActionCable.server.broadcast "characters", id => to_json(methods: [:lat, :lon])
   end
 
   def restore_health(restore)
