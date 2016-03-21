@@ -12,6 +12,7 @@ class Character
     @_characters[id]
 
   @upsert: (id, data) ->
+    data = JSON.parse(data)
     if @_characters[id] == undefined
       console.debug('making new character')
       @_characters[id] = new Character(data)
@@ -26,9 +27,9 @@ class Character
     @marker.addTo(App.map)
 
   update: (data) ->
+    @data = data
     @marker.setIcon(@_characterIcon(data.health))
     @marker.setLatLng([data['lat'], data['lon']])
-    @data = data
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)
     $('.header .water .value').html(data.water)
@@ -93,4 +94,3 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   lose_water: (id, d = 5) ->
     @perform("lose_water", {id: id, damage: d})
-
