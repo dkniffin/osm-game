@@ -15,6 +15,10 @@ class Zombie
       @_zombies[id] = new Zombie(data)
     else
       @_zombies[id].update(data)
+      if @_zombies[id].data.health <= 0
+
+        @_zombies[id].delete()
+        delete @_zombies[id]
     @_zombies[id]
 
   constructor: (@data) ->
@@ -28,6 +32,10 @@ class Zombie
     @marker.setLatLng([data['lat'], data['lon']])
     @data = data
     # $('.header .health .value').html(data.health)
+
+  delete: () ->
+    console.log('zombie killed')
+    App.map.removeLayer(@marker)
 
   select: (e) ->
     App.game.selected = this

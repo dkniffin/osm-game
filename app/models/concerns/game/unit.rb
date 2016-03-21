@@ -3,6 +3,8 @@ module Game
     extend ActiveSupport::Concern
 
     included do
+      before_save :full_health
+
       def move(lat, lon)
         unless colides_with_building?(lat, lon)
           update(current_action: :move, action_details: { target_lat: lat, target_lon: lon })
@@ -17,6 +19,32 @@ module Game
 
       def speed_per_tick
         speed.to(1.meter.per.send(::Ticker::TICK_TIME.parts[0][0]))
+      end
+
+      def attack(target, tick_count)
+        if tick_count % attack_speed == 0
+          target.take_damage(attack_damage)
+        end
+      end
+
+      def restore_health(restore)
+        new_health = self.health += restore
+        new_health = 100 if new_health > 100
+        update(health: new_health)
+      end
+
+      def take_damage(damage)
+        new_health = self.health -= damage
+        new_health = 0 if new_health < 0
+        update(health: new_health)
+      end
+
+      def delete_if_dead
+        if health <= 0
+          if self.class == Zombie
+            destroy
+          end
+        end
       end
 
       private
@@ -43,6 +71,10 @@ module Game
 
       def unordered_between?(subject, arg1, arg2)
         subject.between?(*[arg1, arg2].sort)
+      end
+
+      def full_health
+        self.health ||= 100
       end
     end
   end

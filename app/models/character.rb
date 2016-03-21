@@ -2,29 +2,28 @@ class Character < ActiveRecord::Base
   include Game::Unit
   validates :name, presence: true
 
+  ATTACK_RANGE = 0.01 # km
+  ATTACK_SPEED = 15
+  ATTACK_DAMAGE = 8
+
   include Geographic::Point
 
   reverse_geocoded_by :lat, :lon
 
-  def tick(_)
+  def tick(tick_count)
     if current_action.present?
       if current_action == 'move'
         move_towards([action_details['target_lat'], action_details['target_lon']])
       end
+    else
+      zombie = Zombie.closest_to(lat, lon)
+      if zombie.present?
+        if latlng.distance(zombie.latlng) * 100 <= ATTACK_RANGE
+          attack(zombie, tick_count)
+        end
+      end
     end
     ActionCable.server.broadcast "characters", id => to_json(methods: [:lat, :lon])
-  end
-
-  def restore_health(restore)
-    new_health = self.health += restore
-    new_health = 100 if new_health > 100
-    update(health: new_health)
-  end
-
-  def take_damage(damage)
-    new_health = self.health -= damage
-    new_health = 0 if new_health < 0
-    update(health: new_health)
   end
 
   def restore_food(restore)
@@ -49,5 +48,17 @@ class Character < ActiveRecord::Base
     new_water = self.water -= damage
     new_water = 0 if new_water < 0
     update(water: new_water)
+  end
+
+  def attack_speed
+    ATTACK_SPEED
+  end
+
+  def attack_range
+    ATTACK_RANGE
+  end
+
+  def attack_damage
+    ATTACK_DAMAGE
   end
 end

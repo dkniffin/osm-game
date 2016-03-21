@@ -19,21 +19,28 @@ class Zombie < ApplicationRecord
 
   def tick(tick_count)
     char = Character.closest_to(lat, lon)
-    if latlng.distance(char.latlng) * 100 <= ATTACK_RANGE
-      attack_character(char, tick_count)
+    if latlng.distance(char.latlng) * 100 <= attack_range
+      attack(char, tick_count)
     elsif latlng.distance(char.latlng) * 100 <= AGGRO_DISTANCE
       move_towards([char.lat, char.lon])
     end
     broadcast_updates
+    delete_if_dead
+  end
+
+  def attack_speed
+    ATTACK_SPEED
+  end
+
+  def attack_range
+    ATTACK_RANGE
+  end
+
+  def attack_damage
+    ATTACK_DAMAGE
   end
 
   private
-
-  def attack_character(char, tick_count)
-    if tick_count % ATTACK_SPEED == 0
-      char.take_damage(ATTACK_DAMAGE)
-    end
-  end
 
   def broadcast_updates
     ActionCable.server.broadcast "zombies", id => to_json(methods: [:lat, :lon])
