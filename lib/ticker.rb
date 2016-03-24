@@ -14,9 +14,9 @@ class Ticker
     tick_count = 0
     every_tick do
       tick_count += 1
-      Character.all.each { |c| c.tick(tick_count) }
+      tick_model(Character, tick_count)
       # @spawner.spawn
-      Zombie.all.each { |z| z.tick(tick_count) }
+      tick_model(Zombie, tick_count)
     end
   end
 
@@ -30,6 +30,15 @@ class Ticker
       _next = [last + TICK_TIME,now].max
       sleep (_next-now)
       last = _next
+    end
+  end
+
+  def tick_model(model, tick_count)
+    model.all.each do |obj|
+      obj.tick(tick_count)
+      if obj.changed?
+        obj.save
+      end
     end
   end
 end

@@ -1,5 +1,6 @@
 class Character < ActiveRecord::Base
   include Game::Unit
+  include Game::FEUpdater
   validates :name, presence: true
 
   ATTACK_RANGE = 0.01 # km
@@ -23,7 +24,6 @@ class Character < ActiveRecord::Base
         end
       end
     end
-    ActionCable.server.broadcast "characters", id => to_json(methods: [:lat, :lon])
   end
 
   def restore_food(restore)

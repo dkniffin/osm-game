@@ -57,10 +57,15 @@ module Game
         new_lat, new_lon = Geocoder::Calculations.endpoint([lat, lon], bearing, dist_km)
 
         # Check if we've passed it
-        if unordered_between?(new_lat, lat, target[0]) && unordered_between?(new_lon, lon, target[1])
-          update(lat: new_lat, lon: new_lon)
+        if unordered_between?(new_lat, lat, target[0]) &&
+           unordered_between?(new_lon, lon, target[1])
+          self.lat = new_lat
+          self.lon = new_lon
         else
-          update(lat: target[0], lon: target[1], current_action: nil, action_details: nil)
+          self.lat = target[0]
+          self.lon = target[1]
+          self.current_action = nil
+          self.action_details = nil
         end
       end
 
