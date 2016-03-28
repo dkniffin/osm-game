@@ -1,6 +1,10 @@
 class CharactersChannel < ApplicationCable::Channel
   def subscribed
     stream_from "characters"
+
+    Character.all.each do |c|
+      c.send(:broadcast_updates)
+    end
   end
 
   def move(data)
