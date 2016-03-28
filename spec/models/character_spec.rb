@@ -7,6 +7,7 @@ describe Character, type: :model do
   it { is_expected.to respond_to(:latlng) }
   it { is_expected.to respond_to(:player) }
   it { is_expected.to respond_to(:stats) }
+  it { is_expected.to have_many(:items) }
 
   it_behaves_like 'a geographic point'
 
