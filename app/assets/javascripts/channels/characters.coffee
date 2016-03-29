@@ -37,11 +37,13 @@ class Character
   select: (e) ->
     App.game.selected = this
     @marker.setOpacity(SELECTED_OPACITY)
+    App.game.current_action = 'move'
     @_updateSidebar()
 
   unselect: (e) ->
     App.game.selected = null
     @marker.setOpacity(DESELECTED_OPACITY)
+    App.game.current_action = null
     @_hideSidebar()
 
   _updateSidebar: ->
@@ -81,6 +83,9 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   move: (id, latlng) ->
     @perform("move", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+
+  search: (id, latlng) ->
+    @perform("search", {id: id, lat: latlng['lat'], lon: latlng['lng']})
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})

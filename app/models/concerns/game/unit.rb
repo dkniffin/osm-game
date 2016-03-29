@@ -49,23 +49,22 @@ module Game
 
       private
 
+      # Take a single step towards the target. When we arrive, yield
       def move_towards(target)
         target = target.map(&:to_f)
         # Calculate new position
         dist_km = (speed * Ticker::TICK_TIME) / 1000
         bearing = Geocoder::Calculations.bearing_between([lat, lon], target)
         new_lat, new_lon = Geocoder::Calculations.endpoint([lat, lon], bearing, dist_km)
-
         # Check if we've passed it
         if unordered_between?(new_lat, lat, target[0]) &&
            unordered_between?(new_lon, lon, target[1])
-          self.lat = new_lat
-          self.lon = new_lon
+           self.lat = new_lat
+           self.lon = new_lon
         else
           self.lat = target[0]
           self.lon = target[1]
-          self.current_action = nil
-          self.action_details = nil
+          yield
         end
       end
 
