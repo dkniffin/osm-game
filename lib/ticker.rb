@@ -7,7 +7,6 @@ class Ticker
 
   def initialize
     Character.connection
-    @spawner = ZombieSpawner.new
   end
 
   def run
@@ -15,7 +14,7 @@ class Ticker
     every_tick do
       tick_count += 1
       tick_model(Character, tick_count)
-      # @spawner.spawn
+      # ZombieSpawner.run
       tick_model(Zombie, tick_count)
     end
   end
