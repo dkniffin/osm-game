@@ -3,13 +3,13 @@ module OSM
     extend ActiveSupport::Concern
 
     TYPES = {
+      medical: {
+        amenity: %w(hospital doctors dentist clinic pharmacy veterinary)
+      },
       building: {
         not: {
           building: %w(no)
         }
-      },
-      medical: {
-        amenity: %w(hospital doctors dentist clinic pharmacy veterinary)
       },
       gas_station: {
         amenity: %w(fuel)
@@ -17,8 +17,7 @@ module OSM
       food: {
         shop: %w(deli supermarket)
       }
-    }
-
+    }.freeze
 
     included do
       TYPES.each do |type, definition|
@@ -30,10 +29,11 @@ module OSM
       end
 
       def location_type
-        TYPES.select do |type, definition|
+        TYPES.select do |_type, definition|
           filter = definition.delete(:not) || {}
           definition ||= {}
-          filter.none? { |tag, values| values.include?(tags[tag]) } && definition.all? { |tag, values| values.include?(tags[tag]) }
+          filter.none? { |tag, values| values.include?(tags[tag]) } &&
+            definition.all? { |tag, values| values.include?(tags[tag]) }
         end.keys.first
       end
 

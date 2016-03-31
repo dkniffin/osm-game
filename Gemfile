@@ -14,6 +14,7 @@ gem 'alchemist'
 gem 'geocoder'
 gem 'slim-rails'
 gem 'active_interaction', '~> 3.0'
+gem 'pickup'
 
 # OSM Related things
 gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'

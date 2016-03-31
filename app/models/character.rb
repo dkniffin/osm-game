@@ -21,7 +21,7 @@ class Character < ActiveRecord::Base
       end
     when 'search'
       move_towards([action_details['target_lat'], action_details['target_lon']]) do
-        search_at(action_details['target_lat'], action_details['target_lon'])
+        Search.run(character: self)
         self.current_action = nil
         self.action_details = nil
       end
@@ -77,10 +77,6 @@ class Character < ActiveRecord::Base
   end
 
   private
-
-  def search_at(search_lat, search_lon)
-    # TODO
-  end
 
   def include_in_to_json
     [:lat, :lon, :items]
