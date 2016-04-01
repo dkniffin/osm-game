@@ -1,7 +1,7 @@
-class ZombieSpawner
+class ZombieSpawner < ActiveInteraction::Base
   SPAWN_DISTANCE = 0.25 # km
 
-  def spawn
+  def execute
     Character.all.each do |c|
       number_of_zombies = rand(0..5)
       number_of_zombies.times do

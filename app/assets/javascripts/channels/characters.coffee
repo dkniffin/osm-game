@@ -37,16 +37,19 @@ class Character
   select: (e) ->
     App.game.selected = this
     @marker.setOpacity(SELECTED_OPACITY)
+    App.game.current_action = 'move'
     @_updateSidebar()
 
   unselect: (e) ->
     App.game.selected = null
     @marker.setOpacity(DESELECTED_OPACITY)
+    App.game.current_action = null
     @_hideSidebar()
 
   _updateSidebar: ->
     sidebar = $('.sidebar .sidebar__character')
     sidebar.children('.name').html(@data.name)
+    sidebar.children('.inventory').html(@_inventoryHTML(@data.items))
     sidebar.show()
 
   _hideSidebar: ->
@@ -60,6 +63,10 @@ class Character
       iconAnchor:   [12, 12]
       html: "#{@_healthBarHTML(health)}"
     })
+
+  _inventoryHTML: (items) ->
+    $.map items, (item, i) ->
+      "<li>#{item['name']}</li>"
 
   _healthBarHTML: (health) ->
     "<progress value=#{health} max=100 />"
@@ -76,6 +83,9 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   move: (id, latlng) ->
     @perform("move", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+
+  search: (id, latlng) ->
+    @perform("search", {id: id, lat: latlng['lat'], lon: latlng['lng']})
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})

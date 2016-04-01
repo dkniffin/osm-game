@@ -13,6 +13,8 @@ gem 'devise', github: 'plataformatec/devise'
 gem 'alchemist'
 gem 'geocoder'
 gem 'slim-rails'
+gem 'active_interaction', '~> 3.0'
+gem 'pickup'
 
 # OSM Related things
 gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
@@ -20,6 +22,7 @@ gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
 group :development, :test do
   gem 'pry-byebug'
   gem 'rspec-rails', '~> 3.5.0.beta1'
+  gem 'shoulda-matchers'
   gem 'factory_girl_rails'
   gem 'faker'
 end

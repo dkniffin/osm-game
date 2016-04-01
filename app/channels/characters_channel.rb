@@ -11,6 +11,10 @@ class CharactersChannel < ApplicationCable::Channel
     character(data).move(data['lat'], data['lon'])
   end
 
+  def search(data)
+    character(data).search(data['lat'], data['lon'])
+  end
+
   def restore_health(data)
     character(data).restore_health(data['health'])
   end

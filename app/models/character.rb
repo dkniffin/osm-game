@@ -2,6 +2,7 @@ class Character < ActiveRecord::Base
   include Game::Unit
   include Game::FEUpdater
   validates :name, presence: true
+  has_many :items
 
   ATTACK_RANGE = 0.01 # km
   ATTACK_SPEED = 15
@@ -12,11 +13,20 @@ class Character < ActiveRecord::Base
   reverse_geocoded_by :lat, :lon
 
   def tick(tick_count)
-    if current_action.present?
-      if current_action == 'move'
-        move_towards([action_details['target_lat'], action_details['target_lon']])
+    case current_action
+    when 'move'
+      move_towards([action_details['target_lat'], action_details['target_lon']]) do
+        self.current_action = nil
+        self.action_details = nil
+      end
+    when 'search'
+      move_towards([action_details['target_lat'], action_details['target_lon']]) do
+        Search.run(character: self)
+        self.current_action = nil
+        self.action_details = nil
       end
     else
+      # Default action: attack the closest zombie, if they're in range
       zombie = Zombie.closest_to(lat, lon)
       if zombie.present?
         if latlng.distance(zombie.latlng) * 100 <= ATTACK_RANGE
@@ -24,6 +34,10 @@ class Character < ActiveRecord::Base
         end
       end
     end
+  end
+
+  def search(lat, lon)
+    update(current_action: :search, action_details: { target_lat: lat, target_lon: lon })
   end
 
   def restore_food(restore)
@@ -60,5 +74,11 @@ class Character < ActiveRecord::Base
 
   def attack_damage
     ATTACK_DAMAGE
+  end
+
+  private
+
+  def include_in_to_json
+    [:lat, :lon, :items]
   end
 end

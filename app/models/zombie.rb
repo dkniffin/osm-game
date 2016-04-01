@@ -33,4 +33,10 @@ class Zombie < ActiveRecord::Base
   def attack_damage
     ATTACK_DAMAGE
   end
+
+  private
+
+  def include_in_to_json
+    [:lat, :lon]
+  end
 end

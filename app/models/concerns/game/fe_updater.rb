@@ -8,7 +8,7 @@ module Game
       private
 
       def broadcast_updates
-        ActionCable.server.broadcast self.class.name.pluralize.underscore, id => to_json(methods: [:lat, :lon])
+        ActionCable.server.broadcast self.class.name.pluralize.underscore, id => to_json(methods: include_in_to_json)
       end
     end
   end

@@ -3,7 +3,7 @@ module OSM
     OSM::Node.all + OSM::Way.all
   end
 
-  def self.buildings
-    OSM::Node.buildings + OSM::Way.buildings
+  def self.building
+    OSM::Node.building + OSM::Way.building
   end
 end

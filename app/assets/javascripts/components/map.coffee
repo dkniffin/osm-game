@@ -7,7 +7,11 @@ $ ->
   App.icons = {}
 
   App.map.on 'contextmenu', (e) ->
-    App.characters.move(App.game.selected.data.id, e.latlng)
+    switch App.game.current_action
+      when 'move'
+        App.characters.move(App.game.selected.data.id, e.latlng)
+      when 'search'
+        App.characters.search(App.game.selected.data.id, e.latlng)
 
 
   App.map.on 'click', (e) ->

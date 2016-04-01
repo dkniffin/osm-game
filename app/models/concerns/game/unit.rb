@@ -3,7 +3,7 @@ module Game
     extend ActiveSupport::Concern
 
     included do
-      before_save :full_health
+      before_save :default_full_health
 
       def move(lat, lon)
         unless colides_with_building?(lat, lon)
@@ -49,6 +49,7 @@ module Game
 
       private
 
+      # Take a single step towards the target. When we arrive, yield
       def move_towards(target)
         target = target.map(&:to_f)
         # Calculate new position
@@ -64,21 +65,20 @@ module Game
         else
           self.lat = target[0]
           self.lon = target[1]
-          self.current_action = nil
-          self.action_details = nil
+          yield
         end
       end
 
       def colides_with_building?(target_lat, target_lon)
         target = RGeo::Geographic.spherical_factory(srid: 4326).point(target_lon, target_lat)
-        OSM::Way.buildings.intersected_by_line(latlng, target).present?
+        OSM::Way.building.intersected_by_line(latlng, target).present?
       end
 
       def unordered_between?(subject, arg1, arg2)
         subject.between?(*[arg1, arg2].sort)
       end
 
-      def full_health
+      def default_full_health
         self.health ||= 100
       end
     end
