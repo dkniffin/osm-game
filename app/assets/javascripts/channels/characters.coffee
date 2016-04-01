@@ -33,6 +33,8 @@ class Character
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)
     $('.header .water .value').html(data.water)
+    if App.game.selected == this
+      @_updateSidebar()
 
   select: (e) ->
     App.game.selected = this

@@ -3,7 +3,7 @@ module Game
     extend ActiveSupport::Concern
 
     included do
-      after_save :broadcast_updates
+      after_commit :broadcast_updates
 
       private
 

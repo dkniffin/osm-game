@@ -18,7 +18,6 @@ class CharactersChannel < ApplicationCable::Channel
   def use_item(data)
     c = character(data)
     c.use_item(data['item_id'])
-    c.send(:broadcast_updates)
   end
 
   def restore_health(data)
