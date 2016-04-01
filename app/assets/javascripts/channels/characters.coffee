@@ -49,6 +49,7 @@ class Character
   _updateSidebar: ->
     sidebar = $('.sidebar .sidebar__character')
     sidebar.children('.name').html(@data.name)
+    sidebar.children('.health').html(@data.health)
     sidebar.children('.inventory').html(@_inventoryHTML(@data.items))
     sidebar.show()
 
@@ -66,7 +67,7 @@ class Character
 
   _inventoryHTML: (items) ->
     $.map items, (item, i) ->
-      "<li>#{item['name']}</li>"
+      "<li>#{item['name']} <a class='item-action' data-item-id='#{item['id']}'>Use</a></li>"
 
   _healthBarHTML: (health) ->
     "<progress value=#{health} max=100 />"
@@ -86,6 +87,9 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   search: (id, latlng) ->
     @perform("search", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+
+  use_item: (character_id, item_id) ->
+    @perform("use_item", {id: character_id, item_id: item_id})
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})

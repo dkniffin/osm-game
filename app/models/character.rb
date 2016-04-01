@@ -40,6 +40,14 @@ class Character < ActiveRecord::Base
     update(current_action: :search, action_details: { target_lat: lat, target_lon: lon })
   end
 
+  def use_item(item_id)
+    item = items.find(item_id)
+    if item.category == 'medical'
+      restore_health(30)
+    end
+    item.delete
+  end
+
   def restore_food(restore)
     new_food = self.food += restore
     new_food = 100 if new_food > 100
