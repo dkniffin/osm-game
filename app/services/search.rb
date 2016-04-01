@@ -19,9 +19,7 @@ class Search < ActiveInteraction::Base
 
   def search(location)
     stats = resource_stats(location) || {}
-    item_type_picker = Pickup.new(stats)
-    item_type = item_type_picker.pick
-    Item.new(category: item_type, name: item_type) unless item_type.nil?
+    ItemSpawner.run!(category_probabilities: stats)
   end
 
   def resource_stats(location)
