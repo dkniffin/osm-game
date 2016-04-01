@@ -2,11 +2,11 @@ shared_examples_for 'an osm object' do |options = {}|
   let(:model) { described_class }
   let(:factory) { options[:factory] || model.to_s.underscore.to_sym }
 
-  describe '.buildings' do
+  describe '.building' do
     let(:valid_building_values) { %w(yes house commercial garage school) }
     let(:invalid_building_values) { [nil, 'no'] }
-    let!(:buildings) { valid_building_values.map { |v| create(factory, building: v) } }
-    let!(:non_buildings) { invalid_building_values.map { |v| create(factory, building: v) } }
+    let!(:building) { valid_building_values.map { |v| create(factory, building: v) } }
+    let!(:non_building) { invalid_building_values.map { |v| create(factory, building: v) } }
 
     it 'only includes buildings' do
       expect(model.buildings.ids).to include(*buildings.map(&:id))

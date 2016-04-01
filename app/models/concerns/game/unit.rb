@@ -7,6 +7,7 @@ module Game
 
       def move(lat, lon)
         unless colides_with_building?(lat, lon)
+          puts 'setting current_action=move'
           update(current_action: :move, action_details: { target_lat: lat, target_lon: lon })
         end
       end
@@ -70,7 +71,7 @@ module Game
 
       def colides_with_building?(target_lat, target_lon)
         target = RGeo::Geographic.spherical_factory(srid: 4326).point(target_lon, target_lat)
-        OSM::Way.buildings.intersected_by_line(latlng, target).present?
+        OSM::Way.building.intersected_by_line(latlng, target).present?
       end
 
       def unordered_between?(subject, arg1, arg2)
