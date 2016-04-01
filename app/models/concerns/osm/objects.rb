@@ -8,7 +8,7 @@ module OSM
       },
       building: {
         not: {
-          building: %w(no)
+          building: ['no', nil]
         }
       },
       gas_station: {
@@ -22,9 +22,9 @@ module OSM
     included do
       TYPES.each do |type, definition|
         scope type, -> {
-          filter = definition.delete(:not) || {}
-          definition ||= {}
-          where.not(filter).where(definition)
+          filter_hash = definition[:not] || {}
+          requirement_hash = definition.except(:not)
+          where.not(filter_hash).where(requirement_hash)
         }
       end
 
