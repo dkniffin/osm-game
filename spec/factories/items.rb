@@ -2,7 +2,7 @@ FactoryGirl.define do
   factory :item do
     character
     name "Item"
-    type ""
+    category ""
     stats { {} }
   end
 end
