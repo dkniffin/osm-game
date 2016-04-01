@@ -6,6 +6,7 @@ class ItemSpawner < ActiveInteraction::Base
   def execute
     item_category = Pickup.new(category_probabilities).pick
     items = ITEM_STATS[item_category]
+    return nil if items.nil?
     item_data = Pickup.new(
       items,
       weight_func: proc { |item| item['spawn_chance'] },
