@@ -35,7 +35,7 @@ ActiveRecord::Schema.define(version: 20160328123942) do
   create_table "items", force: :cascade do |t|
     t.integer  "character_id"
     t.string   "name"
-    t.string   "type"
+    t.string   "category"
     t.hstore   "stats"
     t.datetime "created_at",   null: false
     t.datetime "updated_at",   null: false

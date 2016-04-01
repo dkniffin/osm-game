@@ -19,16 +19,15 @@ class Search < ActiveInteraction::Base
 
   def search(location)
     stats = resource_stats(location) || {}
-    picker = Pickup.new(stats)
-    item_type = picker.pick
-    puts "Found a #{item_type}!"
-    Item.new(name: item_type) unless item_type.nil?
+    item_type_picker = Pickup.new(stats)
+    item_type = item_type_picker.pick
+    Item.new(category: item_type, name: item_type) unless item_type.nil?
   end
 
   def resource_stats(location)
     case location.location_type
     when :medical
-      { medkit: 4, can_of_food: 1 }
+      { medical: 4, food: 1 }
     end
   end
 end
