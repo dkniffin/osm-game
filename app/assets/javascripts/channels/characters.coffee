@@ -50,9 +50,10 @@ class Character
 
   _updateSidebar: ->
     sidebar = $('.sidebar .sidebar__character')
-    sidebar.children('.name').html(@data.name)
-    sidebar.children('.health').html(@data.health)
-    sidebar.children('.inventory').html(@_inventoryHTML(@data.items))
+    sidebar.find('.name').html(@data.name)
+    sidebar.find('.health').html(@data.health)
+    sidebar.find('.inventory').html(@_inventoryHTML(@data.items))
+    sidebar.find("input[name=current_action]").val([App.game.current_action])
     sidebar.show()
 
   _hideSidebar: ->
