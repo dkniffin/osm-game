@@ -13,10 +13,10 @@ class Zombie < ActiveRecord::Base
   end
 
   def tick(tick_count)
-    char = Character.closest_to(lat, lon)
-    if latlng.distance(char.latlng) * 100 <= attack_range
+    char = Character.closest_to(lon, lat)
+    if latlng.distance(char.latlng) / 1000 <= attack_range
       attack(char, tick_count)
-    elsif latlng.distance(char.latlng) * 100 <= AGGRO_DISTANCE
+    elsif latlng.distance(char.latlng) / 1000 <= AGGRO_DISTANCE
       move_towards([char.lat, char.lon])
     end
     delete_if_dead

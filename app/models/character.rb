@@ -27,9 +27,9 @@ class Character < ActiveRecord::Base
       end
     else
       # Default action: attack the closest zombie, if they're in range
-      zombie = Zombie.closest_to(lat, lon)
+      zombie = Zombie.closest_to(lon, lat)
       if zombie.present?
-        if latlng.distance(zombie.latlng) * 100 <= ATTACK_RANGE
+        if latlng.distance(zombie.latlng) / 1000 <= ATTACK_RANGE
           attack(zombie, tick_count)
         end
       end
