@@ -7,6 +7,10 @@ medical:
     spawn_chance: 5
     stats:
       heal_value: 5
+  - name: "Antibiotics"
+    spawn_chance: 3
+    stats:
+      heal_value: 10
 food:
   - name: "Can of Beans"
     spawn_chance: 1
