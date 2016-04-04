@@ -10,18 +10,8 @@ class ItemSpawner < ActiveInteraction::Base
     item_data = Pickup.new(
       items,
       weight_func: proc { |item| item['spawn_chance'] },
-      key_func: proc { |item| item.except('spawn_chance') }
+      key_func: proc { |item| item.except('spawn_chance').merge(category: item_category) }
     ).pick
     Item.new(item_data)
-  end
-
-  private
-
-  def lookup_table_for_category(category)
-    ITEM_STATS[category].map do |data|
-      spawn_chance = data.delete('spawn_chance')
-      data['category'] = category
-      [data, spawn_chance]
-    end.to_h
   end
 end

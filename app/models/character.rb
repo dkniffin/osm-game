@@ -45,7 +45,8 @@ class Character < ActiveRecord::Base
     if item.category == 'medical'
       restore_health(30)
     end
-    item.delete
+    items.delete(item)
+    item.destroy
   end
 
   def restore_food(restore)
