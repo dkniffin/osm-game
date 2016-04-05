@@ -19,7 +19,7 @@ class Search < ActiveInteraction::Base
 
   def search(location)
     stats = resource_stats(location) || {}
-    ItemSpawner.run!(category_probabilities: stats)
+    ItemSpawner.run!(category_probabilities: stats, skill: 1)
   end
 
   def resource_stats(location)
