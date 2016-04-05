@@ -1,5 +1,5 @@
 class Search < ActiveInteraction::Base
-  interface :character, methods: %i(items latlng)
+  interface :character, methods: %i(items latlng search_level)
 
   def execute
     # get character's location
@@ -9,7 +9,7 @@ class Search < ActiveInteraction::Base
     return if location.nil?
 
     # find an item in that location
-    item = search(location)
+    item = search(location, character.search_level)
 
     # add it to the characters items
     character.items << item unless item.nil?
@@ -17,9 +17,9 @@ class Search < ActiveInteraction::Base
 
   private
 
-  def search(location)
+  def search(location, skill)
     stats = resource_stats(location) || {}
-    ItemSpawner.run!(category_probabilities: stats, skill: 1)
+    ItemSpawner.run!(category_probabilities: stats, skill: skill)
   end
 
   def resource_stats(location)

@@ -6,8 +6,9 @@ class ItemSpawner < ActiveInteraction::Base
 
   def execute
     item_category = Pickup.new(category_probabilities).pick
-    items = ITEM_STATS[item_category].map{|i| i.merge(category: item_category)}
+    items = ITEM_STATS[item_category]
     return nil if items.nil?
+    items = items.map { |i| i.merge(category: item_category) }
     items = weighted_spawn_chances(items, skill)
     item_picker = Pickup.new(
       items,
