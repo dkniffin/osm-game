@@ -27,9 +27,9 @@ class Character < ActiveRecord::Base
       end
     else
       # Default action: attack the closest zombie, if they're in range
-      zombie = Zombie.closest_to(lat, lon)
+      zombie = Zombie.closest_to(lon, lat)
       if zombie.present?
-        if latlng.distance(zombie.latlng) * 100 <= ATTACK_RANGE
+        if latlng.distance(zombie.latlng) / 1000 <= ATTACK_RANGE
           attack(zombie, tick_count)
         end
       end
@@ -38,6 +38,15 @@ class Character < ActiveRecord::Base
 
   def search(lat, lon)
     update(current_action: :search, action_details: { target_lat: lat, target_lon: lon })
+  end
+
+  def use_item(item_id)
+    item = items.find(item_id)
+    if item.category == 'medical'
+      restore_health(30)
+    end
+    items.delete(item)
+    item.destroy
   end
 
   def restore_food(restore)

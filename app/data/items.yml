@@ -1,0 +1,16 @@
+medical:
+  - name: "Medkit"
+    spawn_chance: 1
+    stats:
+      heal_value: 30
+  - name: "Bandage"
+    spawn_chance: 5
+    stats:
+      heal_value: 5
+  - name: "Antibiotics"
+    spawn_chance: 3
+    stats:
+      heal_value: 10
+food:
+  - name: "Can of Beans"
+    spawn_chance: 1

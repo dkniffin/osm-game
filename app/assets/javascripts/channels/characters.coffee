@@ -33,6 +33,8 @@ class Character
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)
     $('.header .water .value').html(data.water)
+    if App.game.selected == this
+      @_updateSidebar()
 
   select: (e) ->
     App.game.selected = this
@@ -48,8 +50,10 @@ class Character
 
   _updateSidebar: ->
     sidebar = $('.sidebar .sidebar__character')
-    sidebar.children('.name').html(@data.name)
-    sidebar.children('.inventory').html(@_inventoryHTML(@data.items))
+    sidebar.find('.name').html(@data.name)
+    sidebar.find('.health').html(@data.health)
+    sidebar.find('.inventory').html(@_inventoryHTML(@data.items))
+    sidebar.find("input[name=current_action]").val([App.game.current_action])
     sidebar.show()
 
   _hideSidebar: ->
@@ -66,7 +70,7 @@ class Character
 
   _inventoryHTML: (items) ->
     $.map items, (item, i) ->
-      "<li>#{item['name']}</li>"
+      "<li>#{item['name']} <a class='item-action' data-item-id='#{item['id']}'>Use</a></li>"
 
   _healthBarHTML: (health) ->
     "<progress value=#{health} max=100 />"
@@ -86,6 +90,9 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   search: (id, latlng) ->
     @perform("search", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+
+  use_item: (character_id, item_id) ->
+    @perform("use_item", {id: character_id, item_id: item_id})
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})
