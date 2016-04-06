@@ -25,5 +25,7 @@ module OsmGame
       #{config.root}/app/models/concerns
       #{config.root}/lib
     )
+
+    config.assets.paths << Rails.root.join('app', 'assets', 'models')
   end
 end

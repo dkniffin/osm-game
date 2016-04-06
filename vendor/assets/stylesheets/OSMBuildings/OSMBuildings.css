@@ -1,0 +1,68 @@
+
+.osmb-container {
+}
+
+.osmb-attribution {
+    position:absolute;
+    right:0;
+    bottom:0;
+    padding:1px 3px;
+    background:rgba(255,255,255,0.5);
+    font:11px sans-serif;
+    z-index: 10;
+}
+
+.osmb-attribution a {
+    text-decoration:none;
+    color:#0078A8;
+}
+
+.osmb-attribution a:visited {
+    text-decoration:none;
+    color:#0078A8;
+}
+
+.osmb-attribution a:hover {
+    text-decoration:underline;
+    color:#0078A8;
+}
+
+.control {
+  position: absolute;
+  left: 0;
+  z-index: 1000;
+}
+
+.control.tilt {
+  top: 40px;
+}
+
+.control.rotation {
+  top: 85px;
+}
+
+.control.zoom {
+  top: 130px;
+}
+
+.control.zoom button{
+  font-weight: normal;
+}
+
+.control button {
+  width: 30px;
+  height: 30px;
+  margin: 15px 0 0 15px;
+  border: 1px solid #999999;
+  background: #ffffff;
+  opacity: 0.6;
+  border-radius: 5px;
+  box-shadow: 0 0 5px #666666;
+  font-weight: bold;
+  text-align: center;
+}
+
+.control button:hover {
+  opacity: 1;
+  cursor: pointer;
+}

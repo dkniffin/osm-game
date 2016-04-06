@@ -4,7 +4,6 @@ class Zombie
   SELECTED_OPACITY = 1.0
   @_zombies: {}
 
-
   @get: (id) ->
     @_zombies[id]
 
@@ -22,28 +21,29 @@ class Zombie
     @_zombies[id]
 
   constructor: (@data) ->
-    @marker = L.marker([@data['lat'], @data['lon']],
-      {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @marker.on('click', @select.bind(this))
-    @marker.addTo(App.map)
+    # @marker = L.marker([@data['lat'], @data['lon']],
+    #   {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
+    @model = App.osmb.addOBJ(App.models.zombie, { latitude: @data['lat'], longitude: @data['lon'] }, {color: 'green'})
+    # @marker.on('click', @select.bind(this))
+    # @marker.addTo(App.map)
 
   update: (data) ->
-    @marker.setIcon(@_zombieIcon(data.health))
-    @marker.setLatLng([data['lat'], data['lon']])
+    # @marker.setIcon(@_zombieIcon(data.health))
+    # @marker.setLatLng([data['lat'], data['lon']])
     @data = data
     # $('.header .health .value').html(data.health)
 
   delete: () ->
     console.log('zombie killed')
-    App.map.removeLayer(@marker)
+    # App.map.removeLayer(@marker)
 
   select: (e) ->
     App.game.selected = this
-    @marker.setOpacity(SELECTED_OPACITY)
+    # @marker.setOpacity(SELECTED_OPACITY)
 
   unselect: (e) ->
     App.game.selected = null
-    @marker.setOpacity(DESELECTED_OPACITY)
+    # @marker.setOpacity(DESELECTED_OPACITY)
 
   _zombieIcon: (health) ->
     L.divIcon({

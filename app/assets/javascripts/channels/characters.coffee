@@ -21,15 +21,16 @@ class Character
     @_characters[id]
 
   constructor: (@data) ->
-    @marker = L.marker([@data['lat'], @data['lon']],
-      {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @marker.on('click', @select.bind(this))
-    @marker.addTo(App.map)
+    # @marker = L.marker([@data['lat'], @data['lon']],
+      # {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
+    @model = App.osmb.addOBJ(App.models.character, { latitude: @data['lat'], longitude: @data['lon'] }, {color: 'tan'})
+    # @marker.on('click', @select.bind(this))
+    # @marker.addTo(App.map)
 
   update: (data) ->
     @data = data
-    @marker.setIcon(@_characterIcon(data.health))
-    @marker.setLatLng([data['lat'], data['lon']])
+    # @marker.setIcon(@_characterIcon(data.health))
+    # @marker.setLatLng([data['lat'], data['lon']])
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)
     $('.header .water .value').html(data.water)
@@ -38,13 +39,13 @@ class Character
 
   select: (e) ->
     App.game.selected = this
-    @marker.setOpacity(SELECTED_OPACITY)
+    # @marker.setOpacity(SELECTED_OPACITY)
     App.game.current_action = 'move'
     @_updateSidebar()
 
   unselect: (e) ->
     App.game.selected = null
-    @marker.setOpacity(DESELECTED_OPACITY)
+    # @marker.setOpacity(DESELECTED_OPACITY)
     App.game.current_action = null
     @_hideSidebar()
 
