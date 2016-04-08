@@ -9,5 +9,6 @@
 #= require cable
 
 #= require components/map
+#= require components/map-3d
 #= require components/buttons
 #= require components/sidebar

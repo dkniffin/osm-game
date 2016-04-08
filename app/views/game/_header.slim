@@ -1,0 +1,27 @@
+.header
+  .resources
+    .food
+      = image_tag('food.png')
+      span.key Food:
+      span.value
+        = @character.food
+    .water
+      = image_tag('water.png')
+      span.key Water:
+      span.value
+        = @character.water
+    .dev-console
+      span.key Health:
+      = link_to image_tag("plus.png"), "#", id: "restore-health"
+      = link_to image_tag("minus.png"), "#", id: "take-damage"
+      span.key Food:
+      = link_to image_tag("plus.png"), "#", id: "restore-food"
+      = link_to image_tag("minus.png"), "#", id: "lose-food"
+      span.key Water:
+      = link_to image_tag("plus.png"), "#", id: "restore-water"
+      = link_to image_tag("minus.png"), "#", id: "lose-water"
+  .user-actions
+    - if signed_in?
+      = link_to 'Log out', destroy_user_session_path, method: :delete
+    - else
+      = link_to 'Log in', new_user_session_path
