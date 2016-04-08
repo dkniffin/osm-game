@@ -98,7 +98,7 @@ class Character < ActiveRecord::Base
   end
 
   def attack_damage
-    current_weapon.try(:damage) || ATTACK_DAMAGE_WITHOUT_WEAPON
+    current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || ATTACK_DAMAGE_WITHOUT_WEAPON
   end
 
   def current_weapon
