@@ -113,6 +113,10 @@ class Character < ActiveRecord::Base
     items - equipped_items
   end
 
+  def search_level
+    self[:search_level] || 1
+  end
+
   private
 
   def include_in_to_json

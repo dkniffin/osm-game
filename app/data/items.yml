@@ -4,11 +4,11 @@ medical:
     stats:
       heal_value: 30
   - name: "Bandage"
-    spawn_chance: 5
+    spawn_chance: 50
     stats:
       heal_value: 5
   - name: "Antibiotics"
-    spawn_chance: 3
+    spawn_chance: 20
     stats:
       heal_value: 10
 food:
