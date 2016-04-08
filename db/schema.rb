@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160328123942) do
+ActiveRecord::Schema.define(version: 20160408172702) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -21,7 +21,6 @@ ActiveRecord::Schema.define(version: 20160328123942) do
   create_table "characters", force: :cascade do |t|
     t.string   "name"
     t.boolean  "player"
-    t.hstore   "stats"
     t.datetime "created_at",                                                         null: false
     t.datetime "updated_at",                                                         null: false
     t.string   "current_action"
@@ -30,6 +29,7 @@ ActiveRecord::Schema.define(version: 20160328123942) do
     t.integer  "water",                                                default: 100
     t.integer  "food",                                                 default: 100
     t.geometry "latlng",         limit: {:srid=>0, :type=>"geometry"}
+    t.integer  "search_level"
   end
 
   create_table "items", force: :cascade do |t|
@@ -37,8 +37,10 @@ ActiveRecord::Schema.define(version: 20160328123942) do
     t.string   "name"
     t.string   "category"
     t.hstore   "stats"
-    t.datetime "created_at",   null: false
-    t.datetime "updated_at",   null: false
+    t.datetime "created_at",         null: false
+    t.datetime "updated_at",         null: false
+    t.boolean  "equippable"
+    t.boolean  "currently_equipped"
   end
 
   create_table "planet_osm_line", id: false, force: :cascade do |t|

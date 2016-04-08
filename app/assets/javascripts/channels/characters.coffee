@@ -52,7 +52,8 @@ class Character
     sidebar = $('.sidebar .sidebar__character')
     sidebar.find('.name').html(@data.name)
     sidebar.find('.health').html(@data.health)
-    sidebar.find('.inventory').html(@_inventoryHTML(@data.items))
+    sidebar.find('.equipped').html(@_equippedHTML(@data.equipped_items))
+    sidebar.find('.inventory').html(@_inventoryHTML(@data.inventory))
     sidebar.find("input[name=current_action]").val([App.game.current_action])
     sidebar.show()
 
@@ -70,7 +71,17 @@ class Character
 
   _inventoryHTML: (items) ->
     $.map items, (item, i) ->
-      "<li>#{item['name']} <a class='item-action' data-item-id='#{item['id']}'>Use</a></li>"
+      use_link = "<a class='item-action use-item' data-item-id='#{item['id']}'>Use</a>"
+      if item.equippable
+        equip_link = "<a class='item-action equip-item' data-item-id='#{item['id']}'>Equip</a>"
+      else
+        equip_link = ""
+      "<li>#{item['name']} #{use_link} #{equip_link}</li>"
+
+  _equippedHTML: (items) ->
+    $.map items, (item, i) ->
+      unequip_link = "<a class='item-action unequip-item' data-item-id='#{item['id']}'>Unequip</a>"
+      "<li>#{item['name']} #{unequip_link}</li>"
 
   _healthBarHTML: (health) ->
     "<progress value=#{health} max=100 />"
@@ -93,6 +104,9 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
 
   use_item: (character_id, item_id) ->
     @perform("use_item", {id: character_id, item_id: item_id})
+
+  equip_item: (character_id, item_id) ->
+    @perform("equip_item", {id: character_id, item_id: item_id})
 
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})

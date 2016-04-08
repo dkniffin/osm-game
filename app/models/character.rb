@@ -6,7 +6,7 @@ class Character < ActiveRecord::Base
 
   ATTACK_RANGE = 0.01 # km
   ATTACK_SPEED = 15
-  ATTACK_DAMAGE = 8
+  ATTACK_DAMAGE_WITHOUT_WEAPON = 8
 
   include Geographic::Point
 
@@ -49,6 +49,17 @@ class Character < ActiveRecord::Base
     item.destroy
   end
 
+  def equip_item(item_id)
+    item = items.find(item_id)
+    return unless item.equippable?
+
+    if current_weapon
+      current_weapon.update(currently_equipped: false)
+    end
+
+    item.update(currently_equipped: true)
+  end
+
   def restore_food(restore)
     new_food = self.food += restore
     new_food = 100 if new_food > 100
@@ -82,12 +93,24 @@ class Character < ActiveRecord::Base
   end
 
   def attack_damage
-    ATTACK_DAMAGE
+    current_weapon.try(:damage) || ATTACK_DAMAGE_WITHOUT_WEAPON
+  end
+
+  def current_weapon
+    items.weapon.equipped.first
+  end
+
+  def equipped_items
+    items.equipped
+  end
+
+  def inventory
+    items - equipped_items
   end
 
   private
 
   def include_in_to_json
-    [:lat, :lon, :items]
+    [:lat, :lon, :inventory, :equipped_items]
   end
 end
