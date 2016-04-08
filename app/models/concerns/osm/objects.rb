@@ -6,16 +6,31 @@ module OSM
       medical: {
         amenity: %w(hospital doctors dentist clinic pharmacy veterinary)
       },
-      building: {
-        not: {
-          building: ['no', nil]
-        }
-      },
       gas_station: {
         amenity: %w(fuel)
       },
       food: {
         shop: %w(deli supermarket)
+      },
+      police: {
+        amenity: %w(police)
+      },
+      weapon_shop: {
+        shop: %w(weapons)
+      },
+      sporting_goods: {
+        shop: %w(outdoor hunting sport)
+      },
+      pawnbroker: {
+        shop: %w(pawnbroker)
+      },
+      house: {
+        building: %w(house)
+      },
+      building: {
+        not: {
+          building: ['no', nil]
+        }
       }
     }.freeze
 

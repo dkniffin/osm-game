@@ -26,6 +26,16 @@ class Search < ActiveInteraction::Base
     case location.location_type
     when :medical
       { medical: 4, food: 1 }
+    when :police
+      { weapon: 5, medical: 1, food: 1 }
+    when :weapon_shop
+      { weapon: 5 }
+    when :sporting_goods
+      { weapon: 2, medical: 2, food: 1 }
+    when :pawnbroker
+      { weapon: 1 }
+    when :house
+      { weapon: 1, medical: 2, food: 5 }
     end
   end
 end

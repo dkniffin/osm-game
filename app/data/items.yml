@@ -13,7 +13,17 @@ medical:
       heal_value: 10
 food:
   - name: "Can of beans"
+    spawn_chance: 10
+  - name: "Granola bar"
     spawn_chance: 5
+  - name: "Beef jerky"
+    spawn_chance: 5
+  - name: "Chips"
+    spawn_chance: 10
+  - name: "Candy"
+    spawn_chance: 10
+  - name: "Bottle of water"
+    spawn_chance: 20
 weapon:
   - name: "Baseball bat"
     spawn_chance: 20
