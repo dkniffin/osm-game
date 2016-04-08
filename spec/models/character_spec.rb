@@ -96,18 +96,26 @@ describe Character, type: :model do
     end
   end
 
-  context do
-    before { subject.update(latlng: Normalize.to_rgeo_point(-105.0, 35.0)) }
+  context 'with a known lat/lng' do
+    let(:lat) { 35.0 }
+    let(:lon) { -105.0 }
+    before { subject.update(latlng: Normalize.to_rgeo_point(lon, lat)) }
 
     describe '#lat' do
       it 'returns the latitude' do
-        expect(subject.lat).to eq(35.0)
+        expect(subject.lat).to eq(lat)
       end
     end
 
     describe '#lng' do
       it 'returns the longitude' do
-        expect(subject.lng).to eq(-105.0)
+        expect(subject.lng).to eq(lon)
+      end
+    end
+
+    describe '#lon' do
+      it 'returns the longitude' do
+        expect(subject.lon).to eq(lon)
       end
     end
 
