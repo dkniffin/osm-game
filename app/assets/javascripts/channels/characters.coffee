@@ -108,6 +108,9 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
   equip_item: (character_id, item_id) ->
     @perform("equip_item", {id: character_id, item_id: item_id})
 
+  unequip_item: (character_id, item_id) ->
+    @perform("unequip_item", {id: character_id, item_id: item_id})
+
   take_damage: (id, d = 5) ->
     @perform("take_damage", {id: id, damage: d})
 

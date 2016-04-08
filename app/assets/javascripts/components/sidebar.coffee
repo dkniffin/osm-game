@@ -11,3 +11,7 @@ $ ->
   $('.inventory').on 'click', '.equip-item', (e) ->
     item_id = $(e.target).data('item-id')
     App.characters.equip_item(App.game.selected.data.id, item_id)
+
+  $('.equipped').on 'click', '.unequip-item', (e) ->
+    item_id = $(e.target).data('item-id')
+    App.characters.unequip_item(App.game.selected.data.id, item_id)

@@ -60,6 +60,11 @@ class Character < ActiveRecord::Base
     item.update(currently_equipped: true)
   end
 
+  def unequip_item(item_id)
+    item = items.find(item_id)
+    item.update(currently_equipped: false)
+  end
+
   def restore_food(restore)
     new_food = self.food += restore
     new_food = 100 if new_food > 100
