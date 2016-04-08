@@ -25,7 +25,7 @@ class window.Zombie
     #   {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
     @model = App.osmb.addOBJ(App.models.zombie,
       { latitude: @data['lat'], longitude: @data['lon'] },
-      { id: "zombie_#{@data['id']}", color: 'green'})
+      { id: "zombie_#{@data['id']}", color: 'green' })
     # @marker.on('click', @select.bind(this))
     # @marker.addTo(App.map)
 

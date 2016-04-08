@@ -2,7 +2,7 @@
 #= require jquery_ujs
 #= require mapbox.js
 
-#= require OSMBuildings/OSMBuildings.debug.js
+#= require OSMBuildings/OSMBuildings.js
 
 #= require helpers/models
 

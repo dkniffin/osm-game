@@ -10,7 +10,6 @@ $ ->
     minZoom: 12,
     maxZoom: 20,
     tilt: 30,
-    rotation: 100.0,
     state: true # stores map position/rotation in url
 
 
@@ -32,6 +31,10 @@ $ ->
 
   App.osmb.addGeoJSONTiles('https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json')
 
+  # App.osmb.addOBJ(App.models.car,
+  #   { latitude: 35.991701, longitude: -78.903691 },
+  #   { id: "car", color: 'red' })
+
   # App.icons = {}
 
   #***************************************************************************
@@ -40,7 +43,7 @@ $ ->
     id = App.osmb.getTarget e.x, e.y, (id) ->
       if id
         document.body.style.cursor = 'pointer'
-        App.osmb.highlight(id, '#f08000')
+        App.osmb.highlight(id)
       else
         document.body.style.cursor = 'default'
         App.osmb.highlight(null)
@@ -54,6 +57,7 @@ $ ->
             type = parts[0]
             id = parts[1]
             if type == 'character'
+              # App.osmb.highlight(id)
               window.Character.get(id).select()
       else
   App.map.on 'contextmenu', (e) ->

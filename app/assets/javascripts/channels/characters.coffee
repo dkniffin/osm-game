@@ -25,7 +25,7 @@ class window.Character
       # {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
     @model = App.osmb.addOBJ(App.models.character,
       { latitude: @data['lat'], longitude: @data['lon'] },
-      { id: "character_#{@data['id']}", color: 'tan'})
+      { id: "character_#{@data['id']}", color: 'tan' })
     # @marker.on('click', @select.bind(this))
     # @marker.addTo(App.map)
 
