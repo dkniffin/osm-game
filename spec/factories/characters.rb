@@ -7,6 +7,5 @@ FactoryGirl.define do
       RGeo::Geographic.spherical_factory(srid: 4326).point(lon, lat)
     end
     player { [true,false].sample }
-    stats { {} }
   end
 end
