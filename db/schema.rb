@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160405115341) do
+ActiveRecord::Schema.define(version: 20160408172702) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -37,8 +37,10 @@ ActiveRecord::Schema.define(version: 20160405115341) do
     t.string   "name"
     t.string   "category"
     t.hstore   "stats"
-    t.datetime "created_at",   null: false
-    t.datetime "updated_at",   null: false
+    t.datetime "created_at",         null: false
+    t.datetime "updated_at",         null: false
+    t.boolean  "equippable"
+    t.boolean  "currently_equipped"
   end
 
   create_table "planet_osm_line", id: false, force: :cascade do |t|

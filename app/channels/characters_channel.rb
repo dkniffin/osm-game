@@ -20,6 +20,16 @@ class CharactersChannel < ApplicationCable::Channel
     c.use_item(data['item_id'])
   end
 
+  def equip_item(data)
+    c = character(data)
+    c.equip_item(data['item_id'])
+  end
+
+  def unequip_item(data)
+    c = character(data)
+    c.unequip_item(data['item_id'])
+  end
+
   def restore_health(data)
     character(data).restore_health(data['health'])
   end

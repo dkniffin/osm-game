@@ -12,5 +12,36 @@ medical:
     stats:
       heal_value: 10
 food:
-  - name: "Can of Beans"
+  - name: "Can of beans"
+    spawn_chance: 10
+  - name: "Granola bar"
+    spawn_chance: 5
+  - name: "Beef jerky"
+    spawn_chance: 5
+  - name: "Chips"
+    spawn_chance: 10
+  - name: "Candy"
+    spawn_chance: 10
+  - name: "Bottle of water"
+    spawn_chance: 20
+weapon:
+  - name: "Baseball bat"
+    spawn_chance: 20
+    equippable: true
+    stats:
+      damage: 10
+  - name: "Pistol"
     spawn_chance: 1
+    equippable: true
+    stats:
+      damage: 30
+  - name: "Crowbar"
+    spawn_chance: 20
+    equippable: true
+    stats:
+      damage: 15
+  - name: "Knife"
+    spawn_chance: 30
+    equippable: true
+    stats:
+      damage: 30
