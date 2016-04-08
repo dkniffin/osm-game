@@ -21,19 +21,25 @@ class window.Character
     @_characters[id]
 
   constructor: (@data) ->
-    # @marker = L.marker([@data['lat'], @data['lon']],
-      # {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @model = App.osmb.addOBJ(App.models.character,
+    if App.map_mode == '3d'
+      @model = App.osmb.addOBJ(App.models.character,
       { latitude: @data['lat'], longitude: @data['lon'] },
       { id: "character_#{@data['id']}", color: 'tan' })
-    # @marker.on('click', @select.bind(this))
-    # @marker.addTo(App.map)
+    else
+      @marker = L.marker([@data['lat'], @data['lon']],
+      {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
+      @marker.on('click', @select.bind(this))
+      @marker.addTo(App.map)
 
   update: (data) ->
     @data = data
-    # @marker.setIcon(@_characterIcon(data.health))
-    # @marker.setLatLng([data['lat'], data['lon']])
-    @model.position = {latitude: data['lat'], longitude: data['lon']}
+
+    if App.map_mode == '3d'
+      @model.position = {latitude: data['lat'], longitude: data['lon']}
+    else
+      @marker.setIcon(@_characterIcon(data.health))
+      @marker.setLatLng([data['lat'], data['lon']])
+
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)
     $('.header .water .value').html(data.water)
@@ -42,14 +48,17 @@ class window.Character
 
   select: (e) ->
     App.game.selected = this
-    # @marker.setOpacity(SELECTED_OPACITY)
+    if App.map_mode == '2d'
+      @marker.setOpacity(SELECTED_OPACITY)
     App.game.current_action = 'move'
     @_updateSidebar()
 
   unselect: (e) ->
     App.game.selected = null
-    # @marker.setOpacity(DESELECTED_OPACITY)
-    App.osmb.highlight(@data['id'])
+    if App.map_mode == '3d'
+      App.osmb.highlight(@data['id'])
+    else
+      @marker.setOpacity(DESELECTED_OPACITY)
     App.game.current_action = null
     @_hideSidebar()
 
@@ -91,10 +100,10 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
     Character.upsert(id, character) for id, character of data
 
   move: (id, latlng) ->
-    @perform("move", {id: id, lat: latlng['latitude'], lon: latlng['longitude']})
+    @perform("move", {id: id, lat: latlng['lat'], lon: latlng['lng']})
 
   search: (id, latlng) ->
-    @perform("search", {id: id, lat: latlng['latitude'], lon: latlng['longitude']})
+    @perform("search", {id: id, lat: latlng['lat'], lon: latlng['lng']})
 
   use_item: (character_id, item_id) ->
     @perform("use_item", {id: character_id, item_id: item_id})
