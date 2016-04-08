@@ -1,4 +1,4 @@
-class Zombie
+class window.Zombie
 
   DESELECTED_OPACITY = 0.7
   SELECTED_OPACITY = 1.0
@@ -23,13 +23,16 @@ class Zombie
   constructor: (@data) ->
     # @marker = L.marker([@data['lat'], @data['lon']],
     #   {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @model = App.osmb.addOBJ(App.models.zombie, { latitude: @data['lat'], longitude: @data['lon'] }, {color: 'green'})
+    @model = App.osmb.addOBJ(App.models.zombie,
+      { latitude: @data['lat'], longitude: @data['lon'] },
+      { id: "zombie_#{@data['id']}", color: 'green'})
     # @marker.on('click', @select.bind(this))
     # @marker.addTo(App.map)
 
   update: (data) ->
     # @marker.setIcon(@_zombieIcon(data.health))
     # @marker.setLatLng([data['lat'], data['lon']])
+    @model.position = {latitude: data['lat'], longitude: data['lon']}
     @data = data
     # $('.header .health .value').html(data.health)
 

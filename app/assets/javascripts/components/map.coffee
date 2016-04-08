@@ -10,6 +10,7 @@ $ ->
     minZoom: 12,
     maxZoom: 20,
     tilt: 30,
+    rotation: 100.0,
     state: true # stores map position/rotation in url
 
 
@@ -35,28 +36,37 @@ $ ->
 
   #***************************************************************************
 
-  # App.map.on 'pointermove', (e) ->
-  #   id = osmb.getTarget e.x, e.y, (id) ->
-  #     if id
-  #       document.body.style.cursor = 'pointer'
-  #       osmb.highlight(id, '#f08000')
-  #     else
-  #       document.body.style.cursor = 'default'
-  #       osmb.highlight(null)
+  App.map.on 'pointermove', (e) ->
+    id = App.osmb.getTarget e.x, e.y, (id) ->
+      if id
+        document.body.style.cursor = 'pointer'
+        App.osmb.highlight(id, '#f08000')
+      else
+        document.body.style.cursor = 'default'
+        App.osmb.highlight(null)
 
-
-  App.map.on 'pointerup', (e) ->
-    debugger
+  App.map.on 'pointerdown', (e) ->
+    id = App.osmb.getTarget e.x, e.y, (obj_id) ->
+      if obj_id
+        if typeof obj_id == "string"
+          parts = obj_id.split "_"
+          if parts[1]
+            type = parts[0]
+            id = parts[1]
+            if type == 'character'
+              window.Character.get(id).select()
+      else
+  App.map.on 'contextmenu', (e) ->
+    coords = App.osmb.unproject(e.x, e.y)
     switch App.game.current_action
       when 'move'
-        App.characters.move(App.game.selected.data.id, e.latlng)
+        App.characters.move(App.game.selected.data.id, coords)
       when 'search'
-        App.characters.search(App.game.selected.data.id, e.latlng)
-
-
-  App.map.on 'click', (e) ->
-    debugger
-    App.game.selected.unselect()
+        App.characters.search(App.game.selected.data.id, coords)
+  #
+  #
+  # App.map.on 'click', (e) ->
+  #   App.game.selected.unselect()
 
   #***************************************************************************
 

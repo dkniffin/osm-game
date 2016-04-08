@@ -1,6 +1,6 @@
 App.game = {}
 
-class Character
+class window.Character
 
   DESELECTED_OPACITY = 0.7
   SELECTED_OPACITY = 1.0
@@ -23,7 +23,9 @@ class Character
   constructor: (@data) ->
     # @marker = L.marker([@data['lat'], @data['lon']],
       # {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @model = App.osmb.addOBJ(App.models.character, { latitude: @data['lat'], longitude: @data['lon'] }, {color: 'tan'})
+    @model = App.osmb.addOBJ(App.models.character,
+      { latitude: @data['lat'], longitude: @data['lon'] },
+      { id: "character_#{@data['id']}", color: 'tan'})
     # @marker.on('click', @select.bind(this))
     # @marker.addTo(App.map)
 
@@ -31,6 +33,7 @@ class Character
     @data = data
     # @marker.setIcon(@_characterIcon(data.health))
     # @marker.setLatLng([data['lat'], data['lon']])
+    @model.position = {latitude: data['lat'], longitude: data['lon']}
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)
     $('.header .water .value').html(data.water)
@@ -46,6 +49,7 @@ class Character
   unselect: (e) ->
     App.game.selected = null
     # @marker.setOpacity(DESELECTED_OPACITY)
+    App.osmb.highlight(@data['id'])
     App.game.current_action = null
     @_hideSidebar()
 
@@ -87,10 +91,10 @@ App.characters = App.cable.subscriptions.create "CharactersChannel",
     Character.upsert(id, character) for id, character of data
 
   move: (id, latlng) ->
-    @perform("move", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+    @perform("move", {id: id, lat: latlng['latitude'], lon: latlng['longitude']})
 
   search: (id, latlng) ->
-    @perform("search", {id: id, lat: latlng['lat'], lon: latlng['lng']})
+    @perform("search", {id: id, lat: latlng['latitude'], lon: latlng['longitude']})
 
   use_item: (character_id, item_id) ->
     @perform("use_item", {id: character_id, item_id: item_id})
