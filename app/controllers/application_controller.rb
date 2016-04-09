@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
     render 'game/main'
   end
 
-  def threeD
+  def three_d
     render 'game/3d'
   end
 
