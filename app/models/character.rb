@@ -40,8 +40,8 @@ class Character < ActiveRecord::Base
     update(current_action: :search, action_details: { target_lat: lat, target_lon: lon })
   end
 
-  def use_item(item_id)
-    item = items.find(item_id)
+  def use_item(item)
+    item = item.class == Integer ? items.find(item) : item
     if item.category == 'medical'
       restore_health(30)
     end

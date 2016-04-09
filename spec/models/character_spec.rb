@@ -137,14 +137,36 @@ describe Character, type: :model do
   end
 
   describe '#search' do
-    pending 'updates current action to search, with the given target'
+    before { subject.update(current_action: nil, action_details: nil) }
+    let(:target_lat) { 39.0 }
+    let(:target_lon) { -105.0 }
+
+    it 'updates current action to search, with the given target' do
+      subject.search(target_lat, target_lon)
+      expect(subject.current_action).to eq('search')
+      expect(subject.action_details)
+        .to include('target_lat' => target_lat.to_s, 'target_lon' => target_lon.to_s)
+    end
   end
 
   describe '#use_item' do
-    pending 'destroys the item'
-    pending 'removes the item from the characters items'
+    let!(:item) { create(:item, character: subject) }
+
+    it 'destroys the item' do
+      expect { subject.use_item(item) }.to change { Item.count }.from(1).to(0)
+    end
+
+    it 'removes the item from the characters items' do
+      expect { subject.use_item(item) }.to change { subject.items.count }.from(1).to(0)
+    end
+
     context 'when the item is a medical item' do
-      pending 'restores the approprate amount of health'
+      let!(:item) { create(:item, character: subject, category: 'medical') }
+      before { subject.update(health: 70) }
+
+      it 'restores the approprate amount of health' do
+        expect { subject.use_item(item) }.to change { subject.health }.from(70).to(100)
+      end
     end
   end
 
