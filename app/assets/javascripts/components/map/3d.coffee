@@ -3,16 +3,16 @@ $ ->
     # Set up the map
     App.map = new GLMap 'map-3d',
       position: { latitude:35.992591, longitude:-78.903991 },
-      zoom: 16,
-      minZoom: 12,
-      maxZoom: 20,
+      zoom: 18,
+      minZoom: 18,
+      maxZoom: 22,
       tilt: 30,
       state: true # stores map position/rotation in url
 
 
     App.osmb = new OSMBuildings
       baseURL: '', # TODO: Fix this
-      minZoom: 15,
+      minZoom: 18,
       maxZoom: 22,
       effects: ['shadows'],
       attribution: '© 3D <a href="https://osmbuildings.org/copyright/">OSM Buildings</a>'
