@@ -4,9 +4,19 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   before_action :authenticate_user!
+  before_action :setup_character
 
   def main
-    @character = Character.first
     render 'game/main'
+  end
+
+  def threeD
+    render 'game/3d'
+  end
+
+  private
+
+  def setup_character
+    @character = Character.first
   end
 end

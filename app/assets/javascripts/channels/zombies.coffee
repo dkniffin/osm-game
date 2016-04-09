@@ -1,9 +1,8 @@
-class Zombie
+class window.Zombie
 
   DESELECTED_OPACITY = 0.7
   SELECTED_OPACITY = 1.0
   @_zombies: {}
-
 
   @get: (id) ->
     @_zombies[id]
@@ -22,28 +21,40 @@ class Zombie
     @_zombies[id]
 
   constructor: (@data) ->
-    @marker = L.marker([@data['lat'], @data['lon']],
-      {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @marker.on('click', @select.bind(this))
-    @marker.addTo(App.map)
+    if App.map_mode == '3d'
+      @model = App.osmb.addOBJ(App.models.zombie,
+        { latitude: @data['lat'], longitude: @data['lon'] },
+        { id: "zombie_#{@data['id']}", color: 'green' })
+    else
+      @marker = L.marker([@data['lat'], @data['lon']],
+        {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
+      @marker.on('click', @select.bind(this))
+      @marker.addTo(App.map)
 
   update: (data) ->
-    @marker.setIcon(@_zombieIcon(data.health))
-    @marker.setLatLng([data['lat'], data['lon']])
     @data = data
+    if App.map_mode == '3d'
+      @model.position = {latitude: @data['lat'], longitude: @data['lon']}
+    else
+      @marker.setIcon(@_zombieIcon(@data.health))
+      @marker.setLatLng([@data['lat'], @data['lon']])
+
     # $('.header .health .value').html(data.health)
 
   delete: () ->
     console.log('zombie killed')
-    App.map.removeLayer(@marker)
+    if App.map_mode == '2d'
+      App.map.removeLayer(@marker)
 
   select: (e) ->
     App.game.selected = this
-    @marker.setOpacity(SELECTED_OPACITY)
+    if App.map_mode == '2d'
+      @marker.setOpacity(SELECTED_OPACITY)
 
   unselect: (e) ->
     App.game.selected = null
-    @marker.setOpacity(DESELECTED_OPACITY)
+    if App.map_mode == '2d'
+      @marker.setOpacity(DESELECTED_OPACITY)
 
   _zombieIcon: (health) ->
     L.divIcon({
