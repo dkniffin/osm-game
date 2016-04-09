@@ -10,6 +10,13 @@ body {
   width: 100%;
   z-index: 10;
 
+  .car-icon {
+    background-size: 24px 24px;
+    background-image: image-url('car.png');
+    background-repeat: no-repeat;
+    background-position: right 25px bottom 8px;
+  }
+
   .character-icon {
     background-size: 24px 24px;
     background-image: image-url('character.png');

@@ -8,6 +8,7 @@ $ ->
     App.icons = {}
 
     App.map.on 'contextmenu', (e) ->
+      debugger
       switch App.game.current_action
         when 'move'
           App.characters.move(App.game.selected.data.id, e.latlng)

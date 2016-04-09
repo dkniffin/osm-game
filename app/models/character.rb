@@ -1,8 +1,10 @@
+# a character
 class Character < ActiveRecord::Base
   include Game::Unit
   include Game::FEUpdater
   validates :name, presence: true
   has_many :items
+  belongs_to :cars
 
   ATTACK_RANGE = 0.01 # km
   ATTACK_SPEED = 15

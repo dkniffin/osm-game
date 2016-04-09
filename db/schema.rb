@@ -11,12 +11,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160405115341) do
+ActiveRecord::Schema.define(version: 20160409185447) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
   enable_extension "hstore"
+
+  create_table "cars", force: :cascade do |t|
+    t.integer  "character_id"
+    t.string   "name"
+    t.integer  "health"
+    t.geometry "latlng",         limit: {:srid=>0, :type=>"geometry"}
+    t.datetime "created_at",                                           null: false
+    t.datetime "updated_at",                                           null: false
+    t.hstore   "action_details"
+  end
 
   create_table "characters", force: :cascade do |t|
     t.string   "name"

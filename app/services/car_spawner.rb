@@ -1,13 +1,13 @@
-# Creates zombies
-class ZombieSpawner < ActiveInteraction::Base
+# Creates cars
+class CarSpawner < ActiveInteraction::Base
   SPAWN_DISTANCE = 0.25 # km
 
   def execute
     Character.all.each do |c|
-      number_of_zombies = rand(0..5)
-      number_of_zombies.times do
+      number_of_cars = rand(0..5)
+      number_of_cars.times do
         spawn_point = random_spawn_coords(lat: c.lat, lon: c.lon)
-        Zombie.create(lat: spawn_point[0], lon: spawn_point[1])
+        Car.create(lat: spawn_point[0], lon: spawn_point[1])
       end
     end
   end

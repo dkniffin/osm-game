@@ -16,6 +16,7 @@ class Ticker
       tick_model(Character, tick_count)
       # ZombieSpawner.run
       tick_model(Zombie, tick_count)
+      tick_model(Car, tick_count)
     end
   end
 
