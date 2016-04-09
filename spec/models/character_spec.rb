@@ -135,4 +135,55 @@ describe Character, type: :model do
       end
     end
   end
+
+  describe '#search' do
+    pending 'updates current action to search, with the given target'
+  end
+
+  describe '#use_item' do
+    pending 'destroys the item'
+    pending 'removes the item from the characters items'
+    context 'when the item is a medical item' do
+      pending 'restores the approprate amount of health'
+    end
+  end
+
+  describe '#tick' do
+    context 'when the current action is move' do
+      pending 'calls move_towards'
+      context 'when the target is within one step' do
+        pending 'sets the lat/lon to the target'
+        pending 'sets current_action to nil'
+        pending 'sets action_details to nil'
+      end
+
+      context 'when the target is not within one step' do
+        pending 'changes the lat/lon'
+        pending 'does not set current_action to nil'
+        pending 'does not set the action_details to nil'
+      end
+    end
+
+    context 'when the current action is search' do
+      pending 'calls move_towards'
+      context 'when the target is within one step' do
+        pending 'calls Search.run'
+        pending 'sets current_action to nil'
+        pending 'sets action_details to nil'
+      end
+
+      context 'when the target is not within one step' do
+        pending 'changes the lat/lon'
+        pending 'does not call Search.run'
+        pending 'does not set current_action to nil'
+        pending 'does not set the action_details to nil'
+      end
+    end
+
+    context 'when there is no current action' do
+      context 'and there is a zombie in range' do
+        pending 'attack is called'
+      end
+    end
+  end
 end
