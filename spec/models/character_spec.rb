@@ -171,40 +171,125 @@ describe Character, type: :model do
   end
 
   describe '#tick' do
+    let(:starting_location) { [35.0, -105.0] }
+    let(:current_action) { nil }
+    let(:action_details) { nil }
+    let(:near_target) { ['34.999999', '-105.0'] }
+    let(:far_target) { ['34.0', '-105.0'] }
+    subject do
+      create(:character,
+             lat: starting_location[0],
+             lon: starting_location[1],
+             current_action: current_action,
+             action_details: action_details)
+    end
+
     context 'when the current action is move' do
-      pending 'calls move_towards'
+      let(:current_action) { 'move' }
+      let(:action_details) { { target_lat: near_target[0], target_lon: near_target[1] } }
+
+      it 'calls move_towards' do
+        expect(subject).to receive(:move_towards).with(near_target).once
+        subject.tick(1)
+      end
+
       context 'when the target is within one step' do
-        pending 'sets the lat/lon to the target'
-        pending 'sets current_action to nil'
-        pending 'sets action_details to nil'
+        before { subject.tick(1) }
+
+        it 'sets the lat/lon to the target' do
+          expect(subject.lat.to_s).to eq(near_target[0])
+          expect(subject.lon.to_s).to eq(near_target[1])
+        end
+
+        it 'sets current_action to nil' do
+          expect(subject.current_action).to eq(nil)
+        end
+
+        it 'sets action_details to nil' do
+          expect(subject.action_details).to eq(nil)
+        end
       end
 
       context 'when the target is not within one step' do
-        pending 'changes the lat/lon'
-        pending 'does not set current_action to nil'
-        pending 'does not set the action_details to nil'
+        let(:action_details) { { target_lat: far_target[0], target_lon: far_target[1] } }
+
+        it 'changes the lat/lon' do
+          expect { subject.tick(1) }.to change { subject.lat }
+        end
+
+        it 'does not set current_action to nil' do
+          subject.tick(1)
+          expect(subject.current_action).to_not eq(nil)
+        end
+
+        it 'does not set the action_details to nil' do
+          subject.tick(1)
+          expect(subject.action_details).to_not eq(nil)
+        end
       end
     end
 
     context 'when the current action is search' do
-      pending 'calls move_towards'
+      let(:current_action) { 'search' }
+      let(:action_details) { { target_lat: near_target[0], target_lon: near_target[1] } }
+
+      it 'calls move_towards' do
+        expect(subject).to receive(:move_towards).with(near_target).once
+        subject.tick(1)
+      end
+
       context 'when the target is within one step' do
-        pending 'calls Search.run'
-        pending 'sets current_action to nil'
-        pending 'sets action_details to nil'
+        it 'calls Search.run' do
+          expect(Search).to receive(:run).with(character: subject).once
+          subject.tick(1)
+        end
+
+        it 'sets current_action to nil' do
+          subject.tick(1)
+          expect(subject.current_action).to eq(nil)
+        end
+
+        it 'sets action_details to nil' do
+          subject.tick(1)
+          expect(subject.action_details).to eq(nil)
+        end
       end
 
       context 'when the target is not within one step' do
-        pending 'changes the lat/lon'
-        pending 'does not call Search.run'
-        pending 'does not set current_action to nil'
-        pending 'does not set the action_details to nil'
+        let(:action_details) { { target_lat: far_target[0], target_lon: far_target[1] } }
+
+        it 'changes the lat/lon' do
+          expect { subject.tick(1) }.to change { subject.lat }
+        end
+
+        it 'does not call Search.run' do
+          expect(Search).to_not receive(:run).with(character: subject)
+          subject.tick(1)
+        end
+
+        it 'does not set current_action to nil' do
+          subject.tick(1)
+          expect(subject.current_action).to_not eq(nil)
+        end
+
+        it 'does not set the action_details to nil' do
+          subject.tick(1)
+          expect(subject.action_details).to_not eq(nil)
+        end
       end
     end
 
     context 'when there is no current action' do
+      let(:current_action) { nil }
+      let(:action_details) { nil }
+
       context 'and there is a zombie in range' do
-        pending 'attack is called'
+        let!(:zombie) { create(:zombie, lat: near_target[0].to_f, lon: near_target[1].to_f) }
+
+        it 'attack is called' do
+          expect(subject).to receive(:attack).with(zombie, 1)
+          subject.tick(1)
+        end
       end
     end
   end
