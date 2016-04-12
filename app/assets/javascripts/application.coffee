@@ -6,6 +6,9 @@
 
 #= require helpers/models
 
+#= require classes/character
+#= require classes/zombie
+
 #= require cable
 
 #= require components/map_mode
@@ -13,3 +16,5 @@
 #= require components/map/3d
 #= require components/buttons
 #= require components/sidebar
+
+App.game = {}
