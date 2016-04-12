@@ -29,7 +29,7 @@ class window.Zombie
       @marker = L.marker([@data['lat'], @data['lon']],
         {icon: @_zombieIcon(@data['health']), opacity: DESELECTED_OPACITY})
       @marker.on('click', @select.bind(this))
-      @marker.addTo(App.map)
+      @marker.addTo(App.leaflet_map)
 
   update: (data) ->
     @data = data
@@ -44,7 +44,7 @@ class window.Zombie
   delete: () ->
     console.log('zombie killed')
     if App.map_mode == '2d'
-      App.map.removeLayer(@marker)
+      App.leaflet_map.removeLayer(@marker)
 
   select: (e) ->
     App.game.selected = this

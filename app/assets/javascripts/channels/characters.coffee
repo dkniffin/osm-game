@@ -25,11 +25,10 @@ class window.Character
       @model = App.osmb.addOBJ(App.models.character,
       { latitude: @data['lat'], longitude: @data['lon'] },
       { id: "character_#{@data['id']}", color: 'tan' })
-    else
-      @marker = L.marker([@data['lat'], @data['lon']],
+    @marker = L.marker([@data['lat'], @data['lon']],
       {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
-      @marker.on('click', @select.bind(this))
-      @marker.addTo(App.map)
+    @marker.on('click', @select.bind(this))
+    @marker.addTo(App.leaflet_map)
 
   update: (data) ->
     @data = data
@@ -38,7 +37,8 @@ class window.Character
       @model.position = {latitude: data['lat'], longitude: data['lon']}
     else
       @marker.setIcon(@_characterIcon(data.health))
-      @marker.setLatLng([data['lat'], data['lon']])
+
+    @marker.setLatLng([data['lat'], data['lon']])
 
     $('.header .health .value').html(data.health)
     $('.header .food .value').html(data.food)

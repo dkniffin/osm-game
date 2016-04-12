@@ -2,12 +2,16 @@
   position: absolute;
   right: 0px;
   width: 300px;
-  top: 35px;
+  top: 40px;
   bottom: 0px;
   z-index: 15;
-  border-left: 2px solid gray;
+  border-left: 1px solid gray;
   background-color: white;
-  padding: 10px;
+  // padding: 10px;
+
+  .sidebar__character {
+    margin: 10px;
+  }
 
   .key {
     margin-top: 0px;
@@ -37,4 +41,13 @@
     cursor: pointer;
     text-decoration: underline;
   }
+}
+
+#minimap {
+  // background-color: red;
+  bottom: 0px;
+  right: 0px;
+  width: 300px;
+  height: 200px;
+  position:fixed;
 }
