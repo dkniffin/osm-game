@@ -19,14 +19,17 @@ class window.Character
     @_characters[id]
 
   constructor: (@data) ->
+    @marker = L.marker([@data['lat'], @data['lon']],
+      {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
     if App.map_mode == '3d'
       @model = App.osmb.addOBJ(App.models.character,
       { latitude: @data['lat'], longitude: @data['lon'] },
       { id: "character_#{@data['id']}", color: 'tan' })
-    @marker = L.marker([@data['lat'], @data['lon']],
-      {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
-    @marker.on('click', @select.bind(this))
-    @marker.addTo(App.leaflet_map)
+    else
+      @marker.on('click', @select.bind(this))
+      @marker.addTo(App.leaflet_map)
+
+    @marker.addTo(App.minimap)
 
   update: (data) ->
     @data = data

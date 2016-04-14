@@ -180,6 +180,18 @@ Basemap.prototype = {
     return null;
   },
 
+  getCameraBounds: function() {
+    var c = this.container.getBoundingClientRect(),
+        osmb = this.layers.items[0]; // TODO: This assumes that the OSMB layer is the first one
+
+    return [
+      osmb.unproject(c.left, c.top),
+      osmb.unproject(c.right, c.top),
+      osmb.unproject(c.right, c.bottom),
+      osmb.unproject(c.left, c.bottom)
+    ];
+  },
+
   setZoom: function(zoom, e) {
     zoom = clamp(parseFloat(zoom), this.minZoom, this.maxZoom);
 
@@ -188,10 +200,10 @@ Basemap.prototype = {
 
       /* if a screen position was given for which the geographic position displayed
        * should not change under the zoom */
-      if (e) {  
-        //FIXME: add code; this needs to take the current camera (rotation and 
+      if (e) {
+        //FIXME: add code; this needs to take the current camera (rotation and
         //       perspective) into account
-        //NOTE:  the old code (comment out below) only works for north-up 
+        //NOTE:  the old code (comment out below) only works for north-up
         //       non-perspective views
         /*
         var dx = this.container.offsetWidth/2  - e.clientX;
@@ -203,6 +215,7 @@ Basemap.prototype = {
         this.center.x += dx;
         this.center.y += dy;*/
       }
+      this.emit('zoom', { zoom: zoom });
       this.emit('change');
     }
     return this;
@@ -231,7 +244,7 @@ Basemap.prototype = {
     if (size.width !== this.width || size.height !== this.height) {
       this.width = size.width;
       this.height = size.height;
-      this.emit('resize');
+      this.emit('resize', { width: this.width, height: this.height });
     }
     return this;
   },
@@ -244,6 +257,7 @@ Basemap.prototype = {
     rotation = parseFloat(rotation)%360;
     if (this.rotation !== rotation) {
       this.rotation = rotation;
+      this.emit('rotate', { rotation: rotation });
       this.emit('change');
     }
     return this;
@@ -257,6 +271,7 @@ Basemap.prototype = {
     tilt = clamp(parseFloat(tilt), 0, 45); // bigger max increases shadow moire on base map
     if (this.tilt !== tilt) {
       this.tilt = tilt;
+      this.emit('tilt', { tilt: tilt });
       this.emit('change');
     }
     return this;
@@ -458,7 +473,7 @@ Pointer.prototype = {
   onContextMenu: function(e) {
     e.preventDefault();
     var pos = getEventOffset(e);
-    this.map.emit('contextmenu', { x: pos.x, y: pos.y })
+    this.map.emit('contextmenu', { x: pos.x, y: pos.y });
     return false;
   },
 
@@ -497,16 +512,19 @@ Pointer.prototype = {
     var dx = pos.x - this.prevX;
     var dy = pos.y - this.prevY;
     var angle = this.map.rotation * Math.PI/180;
-    
+
     var vRight = [ Math.cos(angle),             Math.sin(angle)];
     var vForward=[ Math.cos(angle - Math.PI/2), Math.sin(angle - Math.PI/2)]
-    
-    var dir = add2(  mul2scalar(vRight,    dx), 
+
+    var dir = add2(  mul2scalar(vRight,    dx),
                      mul2scalar(vForward, -dy));
 
-    this.map.setPosition({ 
-      longitude: this.map.position.longitude - dir[0] * scale*lonScale, 
-      latitude:  this.map.position.latitude  + dir[1] * scale });
+    var new_position = {
+      longitude: this.map.position.longitude - dir[0] * scale*lonScale,
+      latitude:  this.map.position.latitude  + dir[1] * scale };
+
+    this.map.setPosition(new_position);
+    this.map.emit('move', new_position);
   },
 
   rotateMap: function(e) {
