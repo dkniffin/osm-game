@@ -2,11 +2,8 @@ $ ->
   App.minimap = L.map('minimap',
     zoomControl: false
     attributionControl: false
-    center: [
-      52.52000
-      13.41000
-    ]
-    zoom: 13)
+    center: [35.992591, -78.903991]
+    zoom: 16)
   console.log(App.minimap)
 
   L.mapbox.styleLayer(App.mapbox_style_url, minZoom: 5, maxZoom: 20).addTo(App.minimap)
