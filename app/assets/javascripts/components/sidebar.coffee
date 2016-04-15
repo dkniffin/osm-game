@@ -1,5 +1,5 @@
 $ ->
-  $('.sidebar .sidebar__section').hide()
+  $('.sidebar .sidebar__character').hide()
 
   $('input[name=current_action]').change (e) ->
     App.game.current_action = e.target.value

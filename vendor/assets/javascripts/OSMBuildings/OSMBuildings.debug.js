@@ -158,6 +158,18 @@ Basemap.prototype = {
     return !!this.pointer.disabled;
   },
 
+  getCameraBounds: function() {
+    var c = this.container.getBoundingClientRect(),
+        osmb = this.layers.items[0]; // TODO: This assumes that the OSMB layer is the first one
+
+    return [
+      osmb.unproject(c.left, c.top),
+      osmb.unproject(c.right, c.top),
+      osmb.unproject(c.right, c.bottom),
+      osmb.unproject(c.left, c.bottom)
+    ];
+  },
+
   getBounds: function() {
     //FIXME: update method; the old code did only work for straight top-down
     //       views, not for other cameras.
@@ -203,6 +215,7 @@ Basemap.prototype = {
         this.center.x += dx;
         this.center.y += dy;*/
       }
+      this.emit('zoom', { zoom: zoom });
       this.emit('change');
     }
     return this;
@@ -213,11 +226,14 @@ Basemap.prototype = {
   },
 
   setPosition: function(pos) {
-    this.position = {
-      latitude:  clamp(parseFloat(pos.latitude), -90, 90),
-      longitude: clamp(parseFloat(pos.longitude), -180, 180)
-    };
+    var lat = parseFloat(pos.latitude);
+    var lon = parseFloat(pos.longitude);
+    if (isNaN(lat) || isNaN(lon)) {
+      return;
+    }
+    this.position = { latitude:clamp(lat, -90, 90), longitude:clamp(lon, -180, 180) };
     this.emit('change');
+    this.emit('move', this.position)
     return this;
   },
 
@@ -229,7 +245,7 @@ Basemap.prototype = {
     if (size.width !== this.width || size.height !== this.height) {
       this.width = size.width;
       this.height = size.height;
-      this.emit('resize');
+      this.emit('resize', { width: this.width, height: this.height });
     }
     return this;
   },
@@ -242,6 +258,7 @@ Basemap.prototype = {
     rotation = parseFloat(rotation)%360;
     if (this.rotation !== rotation) {
       this.rotation = rotation;
+      this.emit('rotate', { rotation: rotation });
       this.emit('change');
     }
     return this;
@@ -255,6 +272,7 @@ Basemap.prototype = {
     tilt = clamp(parseFloat(tilt), 0, 45); // bigger max increases shadow moire on base map
     if (this.tilt !== tilt) {
       this.tilt = tilt;
+      this.emit('tilt', { tilt: tilt });
       this.emit('change');
     }
     return this;
@@ -301,13 +319,38 @@ Basemap.prototype = {
 global.GLMap = Basemap;
 
 
+// TODO: detect pointerleave from container
+// TODO: continue drag/gesture even when off container
+
+function getEventOffset(e) {
+  if (e.offsetX !== undefined) {
+    return { x:e.offsetX, y:e.offsetY };
+  }
+  var offset = getElementOffset(e.target);
+  return {
+    x: e.clientX - offset.x,
+    y: e.clientY - offset.y
+  }
+}
+
+function getElementOffset(el) {
+  var res = { x:0, y:0 };
+
+  while(el.nodeType === 1) {
+    res.x += el.offsetLeft;
+    res.y += el.offsetTop;
+    el = el.parentNode;
+  }
+  return res;
+}
+
 function cancelEvent(e) {
   if (e.preventDefault) {
     e.preventDefault();
   }
-  if (e.stopPropagation) {
-    e.stopPropagation();
-  }
+  //if (e.stopPropagation) {
+  //  e.stopPropagation();
+  //}
   e.returnValue = false;
 }
 
@@ -316,13 +359,13 @@ var Pointer = function(map, container) {
 
   if ('ontouchstart' in global) {
     this._addListener(container, 'touchstart', this.onTouchStart);
-    this._addListener(document, 'touchmove', this.onTouchMove);
-    this._addListener(document, 'touchend', this.onTouchEnd);
+    this._addListener(container, 'touchmove', this.onTouchMove);
+    this._addListener(container, 'touchend', this.onTouchEnd);
     this._addListener(container, 'gesturechange', this.onGestureChange);
   } else {
     this._addListener(container, 'mousedown', this.onMouseDown);
-    this._addListener(document, 'mousemove', this.onMouseMove);
-    this._addListener(document, 'mouseup', this.onMouseUp);
+    this._addListener(container, 'mousemove', this.onMouseMove);
+    this._addListener(container, 'mouseup', this.onMouseUp);
     this._addListener(container, 'contextmenu', this.onContextMenu);
     this._addListener(container, 'dblclick', this.onDoubleClick);
     this._addListener(container, 'mousewheel', this.onMouseWheel);
@@ -366,7 +409,8 @@ Pointer.prototype = {
     if (!this.disabled) {
       this.map.setZoom(this.map.zoom + 1, e);
     }
-    this.map.emit('doubleclick', { x: e.offsetX, y: e.offsetY, button: e.button });
+    var pos = getEventOffset(e);
+    this.map.emit('doubleclick', { x:pos.x, y:pos.y, button:e.button });
   },
 
   onMouseDown: function(e) {
@@ -380,15 +424,18 @@ Pointer.prototype = {
     this.prevRotation = this.map.rotation;
     this.prevTilt = this.map.tilt;
 
-    this.startX = this.prevX = e.offsetX;
-    this.startY = this.prevY = e.offsetY;
+    var pos = getEventOffset(e);
+    this.startX = this.prevX = pos.x;
+    this.startY = this.prevY = pos.y;
 
     this.pointerIsDown = true;
 
-    this.map.emit('pointerdown', { x: e.offsetX, y: e.offsetY, button: e.button });
+    this.map.emit('pointerdown', { x: pos.x, y: pos.y, button: e.button });
   },
 
   onMouseMove: function(e) {
+    var pos = getEventOffset(e);
+
     if (this.pointerIsDown) {
       if (e.button === 0 && !e.altKey) {
         this.moveMap(e);
@@ -396,11 +443,11 @@ Pointer.prototype = {
         this.rotateMap(e);
       }
 
-      this.prevX = e.offsetX;
-      this.prevY = e.offsetY;
+      this.prevX = pos.x;
+      this.prevY = pos.y;
     }
 
-    this.map.emit('pointermove', { x: e.offsetX, y: e.offsetY });
+    this.map.emit('pointermove', { x: pos.x, y: pos.y });
   },
 
   onMouseUp: function(e) {
@@ -409,8 +456,10 @@ Pointer.prototype = {
       return;
     }
 
+    var pos = getEventOffset(e);
+
     if (e.button === 0 && !e.altKey) {
-      if (Math.abs(e.offsetX - this.startX)>5 || Math.abs(e.offsetY - this.startY)>5) {
+      if (Math.abs(pos.x - this.startX)>5 || Math.abs(pos.y - this.startY)>5) {
         this.moveMap(e);
       }
     } else {
@@ -419,12 +468,13 @@ Pointer.prototype = {
 
     this.pointerIsDown = false;
 
-    this.map.emit('pointerup', { x: e.offsetX, y: e.offsetY, button: e.button });
+    this.map.emit('pointerup', { x: pos.x, y: pos.y, button: e.button });
   },
 
   onContextMenu: function(e) {
     e.preventDefault();
-    this.map.emit('contextmenu', { x: e.offsetX, y: e.offsetY })
+    var pos = getEventOffset(e);
+    this.map.emit('contextmenu', { x: pos.x, y: pos.y });
     return false;
   },
 
@@ -457,10 +507,11 @@ Pointer.prototype = {
     //        (e.offsetX, e.offsetY) now.
     // the constant 0.86 was chosen experimentally for the map movement to be
     // "pinned" to the cursor movement when the map is shown top-down
-    var scale = 0.86 * Math.pow( 2, -this.map.zoom);
+    var scale = 0.86 * Math.pow(2, -this.map.zoom);
     var lonScale = 1/Math.cos( this.map.position.latitude/ 180 * Math.PI);
-    var dx = e.offsetX - this.prevX;
-    var dy = e.offsetY - this.prevY;
+    var pos = getEventOffset(e);
+    var dx = pos.x - this.prevX;
+    var dy = pos.y - this.prevY;
     var angle = this.map.rotation * Math.PI/180;
 
     var vRight = [ Math.cos(angle),             Math.sin(angle)];
@@ -469,17 +520,20 @@ Pointer.prototype = {
     var dir = add2(  mul2scalar(vRight,    dx),
                      mul2scalar(vForward, -dy));
 
-    this.map.setPosition({
+    var new_position = {
       longitude: this.map.position.longitude - dir[0] * scale*lonScale,
-      latitude:  this.map.position.latitude  + dir[1] * scale });
+      latitude:  this.map.position.latitude  + dir[1] * scale };
+
+    this.map.setPosition(new_position);
   },
 
   rotateMap: function(e) {
     if (this.disabled) {
       return;
     }
-    this.prevRotation += (e.offsetX - this.prevX)*(360/innerWidth);
-    this.prevTilt -= (e.offsetY - this.prevY)*(360/innerHeight);
+    var pos = getEventOffset(e);
+    this.prevRotation += (pos.x - this.prevX)*(360/innerWidth);
+    this.prevTilt -= (pos.y - this.prevY)*(360/innerHeight);
     this.map.setRotation(this.prevRotation);
     this.map.setTilt(this.prevTilt);
   },
@@ -497,10 +551,11 @@ Pointer.prototype = {
       e = e.touches[0];
     }
 
-    this.startX = this.prevX = e.offsetX;
-    this.startY = this.prevY = e.offsetY;
+    var pos = getEventOffset(e);
+    this.startX = this.prevX = pos.x;
+    this.startY = this.prevY = pos.y;
 
-    this.map.emit('pointerdown', { x: e.offsetX, y: e.offsetY, button: 0 });
+    this.map.emit('pointerdown', { x: pos.x, y: pos.y, button: 0 });
   },
 
   onTouchMove: function(e) {
@@ -510,10 +565,11 @@ Pointer.prototype = {
 
     this.moveMap(e);
 
-    this.prevX = e.offsetX;
-    this.prevY = e.offsetY;
+    var pos = getEventOffset(e);
+    this.prevX = pos.x;
+    this.prevY = pos.y;
 
-    this.map.emit('pointermove', { x: e.offsetX, y: e.offsetY });
+    this.map.emit('pointermove', { x: pos.x, y: pos.y });
   },
 
   onTouchEnd: function(e) {
@@ -521,11 +577,12 @@ Pointer.prototype = {
       e = e.touches[0];
     }
 
-    if (Math.abs(e.offsetX - this.startX)>5 || Math.abs(e.offsetY - this.startY)>5) {
+    var pos = getEventOffset(e);
+    if (Math.abs(pos.x - this.startX)>5 || Math.abs(pos.y - this.startY)>5) {
       this.moveMap(e);
     }
 
-    this.map.emit('pointerup', { x: e.offsetX, y: e.offsetY, button: 0 });
+    this.map.emit('pointerup', { x: pos.x, y: pos.y, button: 0 });
   },
 
   onGestureChange: function(e) {
@@ -2465,7 +2522,7 @@ var GLX = function(container, width, height, highQuality) {
         context.anisotropyExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT
       );
     }
-
+    
     context.depthTextureExtension = context.getExtension('WEBGL_depth_texture');
   }
 
@@ -2560,8 +2617,8 @@ glx.Buffer.prototype = {
 glx.Framebuffer = function(width, height, depthTexture) {
   if (depthTexture && !GL.depthTextureExtension)
     throw "Depth textures are not supported by your GPU";
-
-  this.useDepthTexture = !!depthTexture;
+    
+  this.useDepthTexture = !!depthTexture; 
   this.setSize(width, height);
 };
 
@@ -2573,7 +2630,7 @@ glx.Framebuffer.prototype = {
 
     width = glx.util.nextPowerOf2(width);
     height= glx.util.nextPowerOf2(height);
-
+    
     // already has the right size
     if (width === this.width && height === this.height) {
       return;
@@ -2581,17 +2638,17 @@ glx.Framebuffer.prototype = {
 
     this.width  = width;
     this.height = height;
-
+    
     if (this.depthRenderBuffer) {
       GL.deleteRenderbuffer(this.depthRenderBuffer)
       this.depthRenderBuffer = null;
-    }
-
+    } 
+    
     if (this.depthTexture) {
       this.depthTexture.destroy();
       this.depthTexture = null;
     }
-
+    
     if (this.useDepthTexture) {
       this.depthTexture = new glx.texture.Image()//GL.createTexture();
       this.depthTexture.enable(0);
@@ -2659,7 +2716,7 @@ glx.Framebuffer.prototype = {
     if (this.renderTexture) {
       this.renderTexture.destroy();
     }
-
+    
     if (this.depthTexture) {
       this.depthTexture.destroy();
     }
@@ -2690,7 +2747,7 @@ glx.Shader = function(config) {
   for (i = 0; i < this.attributeNames.length; i++) {
     this.locateAttribute(this.attributeNames[i]);
   }
-
+  
   this.uniforms = {};
   for (i = 0; i < this.uniformNames.length; i++) {
     this.locateUniform(this.uniformNames[i]);
@@ -2736,7 +2793,7 @@ glx.Shader.prototype = {
     for (var name in this.attributes) {
       GL.enableVertexAttribArray(this.attributes[name]);
     }
-
+    
     return this;
   },
 
@@ -2747,7 +2804,7 @@ glx.Shader.prototype = {
       }
     }
   },
-
+  
   bindBuffer: function(buffer, attribute) {
     if (this.attributes[attribute] === undefined) {
       var qualifiedName = this.shaderName + ":" + attribute;
@@ -2757,11 +2814,11 @@ glx.Shader.prototype = {
       }
       return;
     }
-
+    
     buffer.enable();
     GL.vertexAttribPointer(this.attributes[attribute], buffer.itemSize, gl.FLOAT, false, 0, 0);
   },
-
+  
   setUniform: function(uniform, type, value) {
     if (this.uniforms[uniform] === undefined) {
       var qualifiedName = this.shaderName + ":" + uniform;
@@ -2798,7 +2855,7 @@ glx.Shader.prototype = {
       this.setUniformMatrix(uniforms[i][0], uniforms[i][1], uniforms[i][2]);
     }
   },
-
+  
   bindTexture: function(uniform, textureUnit, glxTexture) {
     glxTexture.enable(textureUnit);
     this.setUniform(uniform, "1i", textureUnit);
@@ -2967,13 +3024,13 @@ glx.Matrix.identity3 = function() {
     return res;
   };
 
-  // returns a perspective projection matrix with a field-of-view of 'fov'
+  // returns a perspective projection matrix with a field-of-view of 'fov' 
   // degrees, an width/height aspect ratio of 'aspect', the near plane at 'near'
   // and the far plane at 'far'
   glx.Matrix.Perspective = function(fov, aspect, near, far) {
-    var f =  1 / Math.tan(fov*(Math.PI/180)/2),
+    var f =  1 / Math.tan(fov*(Math.PI/180)/2), 
         nf = 1 / (near - far);
-
+        
     return new glx.Matrix([
       f/aspect, 0,               0,  0,
       0,        f,               0,  0,
@@ -2988,33 +3045,33 @@ glx.Matrix.identity3 = function() {
     var rl = 1 / (right - left),
         tb = 1 / (top - bottom),
         nf = 1 / (near - far);
-
+        
     return new glx.Matrix( [
           (near * 2) * rl,                   0,                     0,  0,
                         0,     (near * 2) * tb,                     0,  0,
       (right + left) * rl, (top + bottom) * tb,     (far + near) * nf, -1,
                         0,                   0, (far * near * 2) * nf,  0]);
   };
-
+  
   glx.Matrix.OffCenterProjection = function (screenBottomLeft, screenTopLeft, screenBottomRight, eye, near, far) {
     var vRight = norm3(sub3( screenBottomRight, screenBottomLeft));
     var vUp    = norm3(sub3( screenTopLeft,     screenBottomLeft));
     var vNormal= normal( screenBottomLeft, screenTopLeft, screenBottomRight);
-
+    
     var eyeToScreenBottomLeft = sub3( screenBottomLeft, eye);
     var eyeToScreenTopLeft    = sub3( screenTopLeft,    eye);
     var eyeToScreenBottomRight= sub3( screenBottomRight,eye);
-
+    
     var d = - dot3(eyeToScreenBottomLeft, vNormal);
-
+    
     var l = dot3(vRight, eyeToScreenBottomLeft) * near / d;
     var r = dot3(vRight, eyeToScreenBottomRight)* near / d;
     var b = dot3(vUp,    eyeToScreenBottomLeft) * near / d;
     var t = dot3(vUp,    eyeToScreenTopLeft)    * near / d;
-
+    
     return glx.Matrix.Frustum(l, r, t, b, near, far);
   };
-
+  
   // based on http://www.songho.ca/opengl/gl_projectionmatrix.html
   glx.Matrix.Ortho = function(left, right, top, bottom, near, far) {
     return new glx.Matrix([
@@ -3067,9 +3124,9 @@ glx.Matrix.identity3 = function() {
 
   glx.Matrix.transpose = function(a) {
     return new Float32Array([
-      a[0], a[4],  a[8], a[12],
-      a[1], a[5],  a[9], a[13],
-      a[2], a[6], a[10], a[14],
+      a[0], a[4],  a[8], a[12], 
+      a[1], a[5],  a[9], a[13], 
+      a[2], a[6], a[10], a[14], 
       a[3], a[7], a[11], a[15]
     ]);
   };
@@ -3533,7 +3590,7 @@ var suncalc = (function () {
 if (CustomEvent === undefined) {
   var CustomEvent = function(type, params) {
     params = params || { bubbles: false, cancelable: false, detail: undefined };
-    var e = document.createEvent( 'CustomEvent' );
+    var e = document.createEvent('CustomEvent');
     e.initCustomEvent(type, params.bubbles, params.cancelable, params.detail );
     return e;
   };
@@ -3541,20 +3598,70 @@ if (CustomEvent === undefined) {
   CustomEvent.prototype = window.Event.prototype;
 }
 
+// adapted from https://raw.githubusercontent.com/seznam/JAK/master/lib/polyfills/gesturechange.js
+// MIT License
+
+if (!('ongesturechange' in window) && 'ontouchstart' in window) {
+  (function() {
+
+    var dist1 = 0;
+    var angle1 = 0;
+    var gestureStarted = false;
+
+    document.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 2) { return; }
+      var t1 = e.touches[0];
+      var t2 = e.touches[1];
+      var dx = t1.clientX - t2.clientX;
+      var dy = t1.clientY - t2.clientY;
+      dist1 = dx*dx + dy*dy;
+      angle1 = Math.atan2(dy,dx);
+      gestureStarted = true;
+    }, false);
+
+    document.addEventListener('touchmove', function(e) {
+      if (e.touches.length !== 2) { return; }
+
+      var t1 = e.touches[0];
+      var t2 = e.touches[1];
+      var dx = t1.clientX - t2.clientX;
+      var dy = t1.clientY - t2.clientY;
+      var dist2 = dx*dx + dy*dy;
+      var angle2 = Math.atan2(dy,dx);
+
+      var event = new CustomEvent('gesturechange', { bubbles: true });
+      event.altKey = e.altKey;
+      event.ctrlKey = e.ctrlKey;
+      event.metaKey = e.metaKey;
+      event.shiftKey = e.shiftKey;
+      event.rotation = ((angle2 - angle1) * (180 / Math.PI)) % 360;
+      event.scale = Math.sqrt(dist2/dist1);
+
+      // setTimeout(function() { target.dispatchEvent(event); }, 0);
+      e.target.dispatchEvent(event);
+    }, false);
+
+    document.addEventListener('touchend', function(e) {
+      gestureStarted = false;
+    }, false);
+
+  }());
+}
+
 var APP;
 var MAP, glx, gl;
 /*
  * Note: OSMBuildings cannot use a single global world coordinate system.
  *       The numerical accuracy required for such a system would be about
- *       32bits to represent world-wide geometry faithfully within a few
- *       centimeters of accuracy. Most computations in OSMBuildings, however,
+ *       32bits to represent world-wide geometry faithfully within a few 
+ *       centimeters of accuracy. Most computations in OSMBuildings, however, 
  *       are performed on a GPU where only IEEE floats with 23bits of accuracy
  *       (plus 8 bits of range) are available.
  *       Instead, OSMBuildings' coordinate system has a reference point
  *       (MAP.position) at the viewport center, and all world positions are
- *       expressed as distances in meters from that reference point. The
- *       reference point itself shifts with map panning so that all world
- *       positions relevant to the part of the world curently rendered on-screen
+ *       expressed as distances in meters from that reference point. The 
+ *       reference point itself shifts with map panning so that all world 
+ *       positions relevant to the part of the world curently rendered on-screen 
  *       can accurately be represented within the limited accuracy of IEEE floats.*/
 
 var OSMBuildings = function(options) {
@@ -3655,7 +3762,7 @@ OSMBuildings.prototype = {
    */
   project: function(latitude, longitude, elevation) {
     var
-      metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE *
+      metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE * 
                                  Math.cos(MAP.position.latitude / 180 * Math.PI),
       worldPos = [ (longitude- MAP.position.longitude) * metersPerDegreeLongitude,
                   -(latitude - MAP.position.latitude)  * METERS_PER_DEGREE_LATITUDE,
@@ -3663,7 +3770,7 @@ OSMBuildings.prototype = {
     // takes current cam pos into account.
     var posNDC = transformVec3( render.viewProjMatrix.data, worldPos);
     posNDC = mul3scalar( add3(posNDC, [1, 1, 1]), 1/2); // from [-1..1] to [0..1]
-
+    
     return { x:    posNDC[0]  * MAP.width,
              y: (1-posNDC[1]) * MAP.height,
              z:    posNDC[2]
@@ -3671,16 +3778,16 @@ OSMBuildings.prototype = {
   },
 
   // TODO: this should be part of the underlying map engine
-  /* returns the geographic position (latitude/longitude) of the map layer
+  /* returns the geographic position (latitude/longitude) of the map layer 
    * (elevation==0) at viewport position (x,y), or 'undefined' if no part of the
    * map plane would be rendered at (x,y) - e.g. if (x,y) lies above the horizon.
    */
   unproject: function(x, y) {
     var inverse = glx.Matrix.invert(render.viewProjMatrix.data);
-    /* convert window/viewport coordinates to NDC [0..1]. Note that the browser
-     * screen coordinates are y-down, while the WebGL NDC coordinates are y-up,
+    /* convert window/viewport coordinates to NDC [0..1]. Note that the browser 
+     * screen coordinates are y-down, while the WebGL NDC coordinates are y-up, 
      * so we have to invert the y value here */
-    var posNDC = [x/MAP.width, 1-y/MAP.height];
+    var posNDC = [x/MAP.width, 1-y/MAP.height]; 
     posNDC = add2( mul2scalar(posNDC, 2.0), [-1, -1, -1]); // [0..1] to [-1..1];
     var worldPos = getIntersectionWithXYPlane(posNDC[0], posNDC[1], inverse);
     if (worldPos === undefined) {
@@ -3840,8 +3947,8 @@ var METERS_PER_DEGREE_LATITUDE = EARTH_CIRCUMFERENCE_IN_METERS / 360;
 var SKYWALL_HEIGHT = 2000.0;
 
 /* For shadow mapping, the camera rendering the scene as seen by the sun has
- * to cover everything that's also visible to the user. For this to work
- * reliably, we have to make assumptions on how high (in [m]) the buildings
+ * to cover everything that's also visible to the user. For this to work 
+ * reliably, we have to make assumptions on how high (in [m]) the buildings 
  * can become.
  * Note: using a lower-than-accurate value will lead to buildings parts at the
  * edge of the viewport to have incorrect shadows. Using a higher-than-necessary
@@ -3985,12 +4092,12 @@ function substituteZCoordinate(points, zValue) {
   for (var i in points) {
     res.push( [points[i][0], points[i][1], zValue] );
   }
-
+  
   return res;
 }
 
 
-var Shaders = {"interaction":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec3 aID;\nattribute vec4 aFilter;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform float uFogRadius;\nuniform float uTime;\nvarying vec4 vColor;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    vColor = vec4(0.0, 0.0, 0.0, 0.0);\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    //*** bending ***************************************************************\n  //  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n  //\n  //  float innerRadius = uBendRadius + mwPosition.y;\n  //  float depth = abs(mwPosition.z);\n  //  float s = depth-uBendDistance;\n  //  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n  //\n  //  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n  //  // travels the full uBendRadius path\n  //  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n  //  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n  //\n  //  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n  //  gl_Position = uProjMatrix * newPosition;\n    gl_Position = uMatrix * pos;\n    vec4 mPosition = vec4(uModelMatrix * pos);\n    float distance = length(mPosition);\n    if (distance > uFogRadius) {\n      vColor = vec4(0.0, 0.0, 0.0, 0.0);\n    } else {\n      vColor = vec4(aID, 1.0);\n    }\n  }\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nvarying vec4 vColor;\nvoid main() {\n  gl_FragColor = vColor;\n}\n"},"buildings":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nattribute vec3 aNormal;\nattribute vec3 aColor;\nattribute vec4 aFilter;\nattribute vec3 aID;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform mat3 uNormalTransform;\nuniform vec3 uLightDirection;\nuniform vec3 uLightColor;\nuniform vec3 uHighlightColor;\nuniform vec3 uHighlightID;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nuniform float uTime;\nvarying vec3 vColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nfloat gradientHeight = 90.0;\nfloat gradientStrength = 0.4;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    vColor = vec3(0.0, 0.0, 0.0);\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    //*** bending ***************************************************************\n  //  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n  //\n  //  float innerRadius = uBendRadius + mwPosition.y;\n  //  float depth = abs(mwPosition.z);\n  //  float s = depth-uBendDistance;\n  //  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n  //\n  //  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n  //  // travels the full uBendRadius path\n  //  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n  //  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n  //\n  //  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n  //  gl_Position = uProjMatrix * newPosition;\n    gl_Position = uMatrix * pos;\n    //*** highlight object ******************************************************\n    vec3 color = aColor;\n    if (uHighlightID.r == aID.r && uHighlightID.g == aID.g && uHighlightID.b == aID.b) {\n      color = mix(aColor, uHighlightColor, 0.5);\n    }\n    //*** light intensity, defined by light direction on surface ****************\n    vec3 transformedNormal = aNormal * uNormalTransform;\n    float lightIntensity = max( dot(transformedNormal, uLightDirection), 0.0) / 1.5;\n    color = color + uLightColor * lightIntensity;\n    vTexCoord = aTexCoord;\n    //*** vertical shading ******************************************************\n    float verticalShading = clamp((gradientHeight-pos.z) / (gradientHeight/gradientStrength), 0.0, gradientStrength);\n    //***************************************************************************\n    vColor = color-verticalShading;\n    vec4 worldPos = uModelMatrix * pos;\n    vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n    verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n  }\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nvarying vec3 vColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform vec3 uFogColor;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nuniform sampler2D uWallTexIndex;\nvoid main() {\n    \n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  gl_FragColor = vec4( vColor* texture2D(uWallTexIndex, vTexCoord).rgb, 1.0-fogIntensity);\n}\n"},"buildings.shadows":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec3 aNormal;\nattribute vec3 aColor;\nattribute vec4 aFilter;\nattribute vec3 aID;\nattribute vec2 aTexCoord;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform mat4 uSunMatrix;\nuniform mat3 uNormalTransform;\nuniform vec3 uHighlightColor;\nuniform vec3 uHighlightID;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nuniform float uTime;\nvarying vec3 vColor;\nvarying vec2 vTexCoord;\nvarying vec3 vNormal;\nvarying vec3 vSunRelPosition;\nvarying float verticalDistanceToLowerEdge;\nfloat gradientHeight = 90.0;\nfloat gradientStrength = 0.4;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    vColor = vec3(0.0, 0.0, 0.0);\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    //*** bending ***************************************************************\n  //  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n  //\n  //  float innerRadius = uBendRadius + mwPosition.y;\n  //  float depth = abs(mwPosition.z);\n  //  float s = depth-uBendDistance;\n  //  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n  //\n  //  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n  //  // travels the full uBendRadius path\n  //  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n  //  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n  //\n  //  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n  //  gl_Position = uProjMatrix * newPosition;\n    gl_Position = uMatrix * pos;\n    //*** highlight object ******************************************************\n    vec3 color = aColor;\n    if (uHighlightID.r == aID.r && uHighlightID.g == aID.g && uHighlightID.b == aID.b) {\n      color = mix(aColor, uHighlightColor, 0.5);\n    }\n    //*** light intensity, defined by light direction on surface ****************\n    vNormal = aNormal;\n    vTexCoord = aTexCoord;\n    //vec3 transformedNormal = aNormal * uNormalTransform;\n    //float lightIntensity = max( dot(aNormal, uLightDirection), 0.0) / 1.5;\n    //color = color + uLightColor * lightIntensity;\n    //*** vertical shading ******************************************************\n    float verticalShading = clamp((gradientHeight-pos.z) / (gradientHeight/gradientStrength), 0.0, gradientStrength);\n    //***************************************************************************\n    vColor = color-verticalShading;\n    vec4 worldPos = uModelMatrix * pos;\n    vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n    verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n    \n    // *** shadow mapping ********\n    vec4 sunRelPosition = uSunMatrix * pos;\n    vSunRelPosition = (sunRelPosition.xyz / sunRelPosition.w + 1.0) / 2.0;\n  }\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nvarying vec2 vTexCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying vec3 vSunRelPosition;\nvarying float verticalDistanceToLowerEdge;\nuniform vec3 uFogColor;\nuniform vec2 uShadowTexDimensions;\nuniform sampler2D uShadowTexIndex;\nuniform sampler2D uWallTexIndex;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nuniform float uShadowStrength;\nuniform vec3 uLightDirection;\nuniform vec3 uLightColor;\nfloat isSeenBySun(const vec2 sunViewNDC, const float depth, const float bias) {\n  if ( clamp( sunViewNDC, 0.0, 1.0) != sunViewNDC)  //not inside sun's viewport\n    return 1.0;\n  \n  float depthFromTexture = texture2D( uShadowTexIndex, sunViewNDC.xy).x;\n  \n  //compare depth values not in reciprocal but in linear depth\n  return step(1.0/depthFromTexture, 1.0/depth + bias);\n}\nvoid main() {\n  vec3 normal = normalize(vNormal); //may degenerate during per-pixel interpolation\n  float diffuse = dot(uLightDirection, normal);\n  diffuse = max(diffuse, 0.0);\n  // reduce shadow strength with:\n  // - lowering sun positions, to be consistent with the shadows on the basemap (there,\n  //   shadows are faded out with lowering sun positions to hide shadow artifacts caused\n  //   when sun direction and map surface are almost perpendicular\n  // - large angles between the sun direction and the surface normal, to hide shadow\n  //   artifacts that occur when surface normal and sun direction are almost perpendicular\n  float shadowStrength = pow( max( min(\n    dot(uLightDirection, vec3(0.0, 0.0, 1.0)),\n    dot(uLightDirection, normal)\n  ), 0.0), 1.5);\n  if (diffuse > 0.0 && shadowStrength > 0.0) {\n    // note: the diffuse term is also the cosine between the surface normal and the\n    // light direction\n    float bias = clamp(0.0007*tan(acos(diffuse)), 0.0, 0.01);\n    vec2 pos = fract( vSunRelPosition.xy * uShadowTexDimensions);\n    \n    vec2 tl = floor(vSunRelPosition.xy * uShadowTexDimensions) / uShadowTexDimensions;\n    float tlVal = isSeenBySun( tl,                           vSunRelPosition.z, bias);\n    float trVal = isSeenBySun( tl + vec2(1.0, 0.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float blVal = isSeenBySun( tl + vec2(0.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float brVal = isSeenBySun( tl + vec2(1.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float occludedBySun = mix( \n                            mix(tlVal, trVal, pos.x), \n                            mix(blVal, brVal, pos.x),\n                            pos.y);\n    diffuse *= 1.0 - (shadowStrength * (1.0 - occludedBySun));\n  }\n  vec3 color = vColor* texture2D( uWallTexIndex, vTexCoord.st).rgb +\n              (diffuse/1.5) * uLightColor;\n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  //gl_FragColor = vec4( mix(color, uFogColor, fogIntensity), 1.0);\n  gl_FragColor = vec4( color, 1.0-fogIntensity);\n}\n"},"flatColor":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nuniform mat4 uMatrix;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform vec4 uColor;\nvoid main() {\n  gl_FragColor = uColor;\n}\n"},"skydome":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvarying float vRelativeHeight;\nfloat gradientHeight = 10.0;\nfloat gradientStrength = 1.0;\nuniform float uBendRadius;\nuniform float uBendDistance;\nuniform float uAbsoluteHeight;\nvoid main() {\n  //*** bending ***************************************************************\n//  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n//\n//  float innerRadius = uBendRadius + mwPosition.y;\n//  float depth = abs(mwPosition.z);\n//  float s = depth-uBendDistance;\n//  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n//\n//  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n//  // travels the full uBendRadius path\n//  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n//  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n//\n//  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n//  gl_Position = uProjMatrix * newPosition;\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n  vRelativeHeight = aPosition.z / uAbsoluteHeight;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float vRelativeHeight;\nvoid main() {\n  float blendFactor = min(100.0 * vRelativeHeight, 1.0);\n  vec4 texColor = texture2D(uTexIndex, vec2(vTexCoord.x, -vTexCoord.y));\n  gl_FragColor = mix( vec4(uFogColor, 1.0), texColor,  blendFactor);\n}\n"},"basemap":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  //*** bending ***************************************************************\n//  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n//\n//  float innerRadius = uBendRadius + mwPosition.y;\n//  float depth = abs(mwPosition.z);\n//  float s = depth-uBendDistance;\n//  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n//\n//  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n//  // travels the full uBendRadius path\n//  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n//  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n//\n//  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n//  vec4 glPosition = uProjMatrix * newPosition;\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n  vec4 worldPos = uModelMatrix * aPosition;\n  vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n  verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nvoid main() {\n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  gl_FragColor = vec4(texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y)).rgb, 1.0-fogIntensity);\n}\n"},"texture":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_FragColor = vec4(texture2D(uTexIndex, vTexCoord.st).rgb, 1.0);\n}\n"},"fogNormal":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec4 aFilter;\nattribute vec3 aNormal;\nuniform mat4 uMatrix;\nuniform mat4 uModelMatrix;\nuniform mat3 uNormalMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying float verticalDistanceToLowerEdge;\nvarying vec3 vNormal;\nuniform float uTime;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    verticalDistanceToLowerEdge = 0.0;\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    gl_Position = uMatrix * pos;\n    vNormal = uNormalMatrix * aNormal;\n    /* in order for the SSAO (which is based on this depth shader) to work\n     * correctly in conjunction with the fog shading, we need to replicate\n     * the fog computation here. This way, the ambient occlusion shader can\n     * later attenuate the ambient occlusion effect in the foggy areas.*/\n    vec4 worldPos = uModelMatrix * pos;\n    vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n    verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n  }\n}\n","fragment":"\n#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nvarying float verticalDistanceToLowerEdge;\nvarying vec3 vNormal;\n/* Note: the depth shader needs to not only store depth information, but\n *       also the fog intensity as well.\n * Rationale: In the current infrastructure, ambient occlusion does not \n * directly affect the building and map shading, but rather is later blended \n * onto the whole scene as a screen-space effect. This, however, is not\n * compatible with fogging: buildings in the fog gradually blend into the \n * background, but the ambient occlusion applied in screen space does not.\n * In the foggy area, this yields barely visible buildings with fully visible\n * ambient occlusion - an irritating effect.\n * To fix this, the depth shader stores not only depth values per pixel, but\n * also computes the fog intensity and stores it in the depth texture along\n * with the color-encoded depth values.\n * This way, the ambient occlusion shader can later not only compute the\n * actual ambient occlusion based on the depth values, but can attenuate\n * the effect in the foggy areas based on the fog intensity.\n */\nvoid main() {\n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  gl_FragColor = vec4(normalize(vNormal) /2.0 + 0.5, clamp(fogIntensity, 0.0, 1.0));\n}\n"},"ambientFromDepth":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n}\n","fragment":"#ifdef GL_FRAGMENT_PRECISION_HIGH\n  // we need high precision for the depth values\n  precision highp float;\n#else\n  precision mediump float;\n#endif\nuniform sampler2D uDepthTexIndex;\nuniform sampler2D uFogTexIndex;\nuniform float uInverseTexWidth;   //in 1/pixels, e.g. 1/512 if the texture is 512px wide\nuniform float uInverseTexHeight;  //in 1/pixels\nuniform float uEffectStrength;\nvarying vec2 vTexCoord;\n/* Retrieves the depth value (dx, dy) pixels away from 'pos' from texture 'uDepthTexIndex'. */\nfloat getDepth(vec2 pos, int dx, int dy)\n{\n  float z = texture2D(uDepthTexIndex, vec2(pos.s + float(dx) * uInverseTexWidth, \n                                   pos.t + float(dy) * uInverseTexHeight)).x;\n  //FIXME: terrible hack; linearize depth based on hard-coded near and far planes\n  const float n = 1.0;\n  const float f = 7500.0;\n  return (2.0 * n) / (f + n - z * (f - n));\n}\n/* getOcclusionFactor() determines a heuristic factor (from [0..1]) for how \n * much the fragment at 'pos' with depth 'depthHere'is occluded by the \n * fragment that is (dx, dy) texels away from it.\n */\nfloat getOcclusionFactor(float depthHere, vec2 pos, int dx, int dy)\n{\n    float depthThere = getDepth(pos, dx, dy);\n    /* if the fragment at (dx, dy) has no depth (i.e. there was nothing rendered there), \n     * then 'here' is not occluded (result 1.0) */\n    if (depthThere == 0.0)\n      return 1.0;\n    /* if the fragment at (dx, dy) is further away from the viewer than 'here', then\n     * 'here is not occluded' */\n    if (depthHere < depthThere )\n      return 1.0;\n      \n    float relDepthDiff = depthThere / depthHere;\n    float depthDiff = abs(depthThere - depthHere) * 7500.0; //FIXME: hard-coded far plane\n    /* if the fragment at (dx, dy) is closer to the viewer than 'here', then it occludes\n     * 'here'. The occlusion is the higher the bigger the depth difference between the two\n     * locations is.\n     * However, if the depth difference is too high, we assume that 'there' lies in a\n     * completely different depth region of the scene than 'here' and thus cannot occlude\n     * 'here'. This last assumption gets rid of very dark artifacts around tall buildings.\n     */\n    return depthDiff < 50.0 ? mix(0.99, 1.0, 1.0 - clamp(depthDiff, 0.0, 1.0)) : 1.0;\n}\n/* This shader approximates the ambient occlusion in screen space (SSAO). \n * It is based on the assumption that a pixel will be occluded by neighboring \n * pixels iff. those have a depth value closer to the camera than the original\n * pixel itself (the function getOcclusionFactor() computes this occlusion \n * by a single other pixel).\n *\n * A naive approach would sample all pixels within a given distance. For an\n * interesting-looking effect, the sampling area needs to be at least 9 pixels \n * wide (-/+ 4), requiring 81 texture lookups per pixel for ambient occlusion.\n * This overburdens many GPUs.\n * To make the ambient occlusion computation faster, we employ the following \n * tricks:\n * 1. We do not consider all texels in the sampling area, but only a select few \n *    (at most 16). This causes some sampling artifacts, which are later\n *    removed by blurring the ambient occlusion texture (this is done in a\n *    separate shader).\n * 2. The further away an object is the fewer samples are considered and the\n *    closer are these samples to the texel for which the ambient occlusion is\n *    being computed. The rationale is that ambient occlusion attempts to de-\n *    determine occlusion by *nearby* other objects. Due to the perspective \n *    projection, the further away objects are, the smaller they become. \n *    So the further away objects are, the closer are those nearby other objects\n *    in screen-space, and thus texels further away no longer need to be \n *    considered.\n *    As a positive side-effect, this also reduces the total number of texels \n *    that need to be sampled.\n */\nvoid main() {\n  float depthHere = getDepth(vTexCoord.st, 0, 0);\n  float fogIntensity = texture2D(uFogTexIndex, vTexCoord.st).w;\n  if (depthHere == 0.0)\n  {\n\t//there was nothing rendered 'here' --> it can't be occluded\n    gl_FragColor = vec4(1.0);\n    return;\n  }\n  float occlusionFactor = 1.0;\n  \n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -1,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +1,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  -1);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  +1);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -2,  -2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +2,  +2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +2,  -2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -2,  +2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -4,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +4,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  -4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  +4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -4,  -4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +4,  +4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +4,  -4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -4,  +4);\n  occlusionFactor = pow(occlusionFactor, 4.0) + 55.0/255.0; // empirical bias determined to let SSAO have no effect on the map plane\n  occlusionFactor = 1.0 - ((1.0 - occlusionFactor) * uEffectStrength);\n  \n  occlusionFactor = 1.0 - ((1.0- occlusionFactor) * (1.0-fogIntensity));\n  gl_FragColor = vec4( vec3(occlusionFactor) , 1.0);\n}\n"},"blur":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform float uInverseTexWidth;   //in 1/pixels, e.g. 1/512 if the texture is 512px wide\nuniform float uInverseTexHeight;  //in 1/pixels\nvarying vec2 vTexCoord;\n/* Retrieves the texel color at (dx, dy) pixels away from 'pos' from texture 'uTexIndex'. */\nvec4 getTexel(vec2 pos, int dx, int dy)\n{\n  //retrieve the color-coded depth\n  return texture2D(uTexIndex, vec2(pos.s + float(dx) * uInverseTexWidth, \n                                   pos.t + float(dy) * uInverseTexHeight));\n}\nvoid main() {\n  vec4 center = texture2D(uTexIndex, vTexCoord);\n  vec4 nonDiagonalNeighbors = getTexel(vTexCoord, -1, 0) +\n                              getTexel(vTexCoord, +1, 0) +\n                              getTexel(vTexCoord,  0,-1) +\n                              getTexel(vTexCoord,  0,+1);\n  vec4 diagonalNeighbors =    getTexel(vTexCoord, -1,-1) +\n                              getTexel(vTexCoord, +1,+1) +\n                              getTexel(vTexCoord, -1,+1) +\n                              getTexel(vTexCoord, +1,-1);  \n  \n  //approximate Gaussian blur (mean 0.0, stdev 1.0)\n  gl_FragColor = 0.2/1.0 * center + \n                 0.5/4.0 * nonDiagonalNeighbors + \n                 0.3/4.0 * diagonalNeighbors;\n}\n"},"basemap.shadows":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec3 aPosition;\nattribute vec3 aNormal;\nuniform mat4 uModelMatrix;\nuniform mat4 uMatrix;\nuniform mat4 uSunMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\n//varying vec2 vTexCoord;\nvarying vec3 vSunRelPosition;\nvarying vec3 vNormal;\nvarying float verticalDistanceToLowerEdge;\nvoid main() {\n  vec4 pos = vec4(aPosition.xyz, 1.0);\n  gl_Position = uMatrix * pos;\n  vec4 sunRelPosition = uSunMatrix * pos;\n  vSunRelPosition = (sunRelPosition.xyz / sunRelPosition.w + 1.0) / 2.0;\n  vNormal = aNormal;\n  vec4 worldPos = uModelMatrix * pos;\n  vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n  verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\n/* This shader computes the diffuse brightness of the map layer. It does *not* \n * render the map texture itself, but is instead intended to be blended on top\n * of an already rendered map.\n * Note: this shader is not (and does not attempt to) be physically correct.\n *       It is intented to be a blend between a useful illustration of cast\n *       shadows and a mitigation of shadow casting artifacts occuring at\n *       low angles on incidence.\n *       Map brightness is only affected by shadows, not by light direction.\n *       Shadows are darkest when light comes from straight above (and thus\n *       shadows can be computed reliably) and become less and less visible\n *       with the light source close to the horizont (where moirC) and offset\n *       artifacts would otherwise be visible).\n */\n//uniform sampler2D uTexIndex;\nuniform sampler2D uShadowTexIndex;\nuniform vec3 uFogColor;\nuniform vec3 uDirToSun;\nuniform vec2 uShadowTexDimensions;\nuniform float uShadowStrength;\nvarying vec2 vTexCoord;\nvarying vec3 vSunRelPosition;\nvarying vec3 vNormal;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nfloat isSeenBySun( const vec2 sunViewNDC, const float depth, const float bias) {\n  if ( clamp( sunViewNDC, 0.0, 1.0) != sunViewNDC)  //not inside sun's viewport\n    return 1.0;\n  \n  float depthFromTexture = texture2D( uShadowTexIndex, sunViewNDC.xy).x;\n  \n  //compare depth values not in reciprocal but in linear depth\n  return step(1.0/depthFromTexture, 1.0/depth + bias);\n}\nvoid main() {\n  //vec2 tl = floor(vSunRelPosition.xy * uShadowTexDimensions) / uShadowTexDimensions;\n  //gl_FragColor = vec4(vec3(texture2D( uShadowTexIndex, tl).x), 1.0);\n  //return;\n  float diffuse = dot(uDirToSun, normalize(vNormal));\n  diffuse = max(diffuse, 0.0);\n  \n  float shadowStrength = uShadowStrength * pow(diffuse, 1.5);\n  if (diffuse > 0.0) {\n    // note: the diffuse term is also the cosine between the surface normal and the\n    // light direction\n    float bias = clamp(0.0007*tan(acos(diffuse)), 0.0, 0.01);\n    \n    vec2 pos = fract( vSunRelPosition.xy * uShadowTexDimensions);\n    \n    vec2 tl = floor(vSunRelPosition.xy * uShadowTexDimensions) / uShadowTexDimensions;\n    float tlVal = isSeenBySun( tl,                           vSunRelPosition.z, bias);\n    float trVal = isSeenBySun( tl + vec2(1.0, 0.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float blVal = isSeenBySun( tl + vec2(0.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float brVal = isSeenBySun( tl + vec2(1.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    diffuse = mix( mix(tlVal, trVal, pos.x), \n                   mix(blVal, brVal, pos.x),\n                   pos.y);\n  }\n  diffuse = mix(1.0, diffuse, shadowStrength);\n  \n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  float darkness = (1.0 - diffuse);\n  darkness *=  (1.0 - fogIntensity);\n  gl_FragColor = vec4(vec3(1.0 - darkness), 1.0);\n}\n"}};
+var Shaders = {"interaction":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec3 aID;\nattribute vec4 aFilter;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform float uFogRadius;\nuniform float uTime;\nvarying vec4 vColor;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    vColor = vec4(0.0, 0.0, 0.0, 0.0);\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    //*** bending ***************************************************************\n  //  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n  //\n  //  float innerRadius = uBendRadius + mwPosition.y;\n  //  float depth = abs(mwPosition.z);\n  //  float s = depth-uBendDistance;\n  //  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n  //\n  //  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n  //  // travels the full uBendRadius path\n  //  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n  //  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n  //\n  //  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n  //  gl_Position = uProjMatrix * newPosition;\n    gl_Position = uMatrix * pos;\n    vec4 mPosition = vec4(uModelMatrix * pos);\n    float distance = length(mPosition);\n    if (distance > uFogRadius) {\n      vColor = vec4(0.0, 0.0, 0.0, 0.0);\n    } else {\n      vColor = vec4(aID, 1.0);\n    }\n  }\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nvarying vec4 vColor;\nvoid main() {\n  gl_FragColor = vColor;\n}\n"},"buildings":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nattribute vec3 aNormal;\nattribute vec3 aColor;\nattribute vec4 aFilter;\nattribute vec3 aID;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform mat3 uNormalTransform;\nuniform vec3 uLightDirection;\nuniform vec3 uLightColor;\nuniform vec3 uHighlightColor;\nuniform vec3 uHighlightID;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nuniform float uTime;\nvarying vec3 vColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nfloat gradientHeight = 90.0;\nfloat gradientStrength = 0.4;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    vColor = vec3(0.0, 0.0, 0.0);\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    //*** bending ***************************************************************\n  //  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n  //\n  //  float innerRadius = uBendRadius + mwPosition.y;\n  //  float depth = abs(mwPosition.z);\n  //  float s = depth-uBendDistance;\n  //  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n  //\n  //  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n  //  // travels the full uBendRadius path\n  //  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n  //  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n  //\n  //  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n  //  gl_Position = uProjMatrix * newPosition;\n    gl_Position = uMatrix * pos;\n    //*** highlight object ******************************************************\n    vec3 color = aColor;\n    if (uHighlightID.r == aID.r && uHighlightID.g == aID.g && uHighlightID.b == aID.b) {\n      color = mix(aColor, uHighlightColor, 0.5);\n    }\n    //*** light intensity, defined by light direction on surface ****************\n    vec3 transformedNormal = aNormal * uNormalTransform;\n    float lightIntensity = max( dot(transformedNormal, uLightDirection), 0.0) / 1.5;\n    color = color + uLightColor * lightIntensity;\n    vTexCoord = aTexCoord;\n    //*** vertical shading ******************************************************\n    float verticalShading = clamp((gradientHeight-pos.z) / (gradientHeight/gradientStrength), 0.0, gradientStrength);\n    //***************************************************************************\n    vColor = color-verticalShading;\n    vec4 worldPos = uModelMatrix * pos;\n    vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n    verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n  }\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nvarying vec3 vColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform vec3 uFogColor;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nuniform sampler2D uWallTexIndex;\nvoid main() {\n    \n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  gl_FragColor = vec4( vColor* texture2D(uWallTexIndex, vTexCoord).rgb, 1.0-fogIntensity);\n}\n"},"buildings.shadows":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec3 aNormal;\nattribute vec3 aColor;\nattribute vec4 aFilter;\nattribute vec3 aID;\nattribute vec2 aTexCoord;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform mat4 uSunMatrix;\nuniform mat3 uNormalTransform;\nuniform vec3 uHighlightColor;\nuniform vec3 uHighlightID;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nuniform float uTime;\nvarying vec3 vColor;\nvarying vec2 vTexCoord;\nvarying vec3 vNormal;\nvarying vec3 vSunRelPosition;\nvarying float verticalDistanceToLowerEdge;\nfloat gradientHeight = 90.0;\nfloat gradientStrength = 0.4;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    vColor = vec3(0.0, 0.0, 0.0);\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    //*** bending ***************************************************************\n  //  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n  //\n  //  float innerRadius = uBendRadius + mwPosition.y;\n  //  float depth = abs(mwPosition.z);\n  //  float s = depth-uBendDistance;\n  //  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n  //\n  //  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n  //  // travels the full uBendRadius path\n  //  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n  //  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n  //\n  //  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n  //  gl_Position = uProjMatrix * newPosition;\n    gl_Position = uMatrix * pos;\n    //*** highlight object ******************************************************\n    vec3 color = aColor;\n    if (uHighlightID.r == aID.r && uHighlightID.g == aID.g && uHighlightID.b == aID.b) {\n      color = mix(aColor, uHighlightColor, 0.5);\n    }\n    //*** light intensity, defined by light direction on surface ****************\n    vNormal = aNormal;\n    vTexCoord = aTexCoord;\n    //vec3 transformedNormal = aNormal * uNormalTransform;\n    //float lightIntensity = max( dot(aNormal, uLightDirection), 0.0) / 1.5;\n    //color = color + uLightColor * lightIntensity;\n    //*** vertical shading ******************************************************\n    float verticalShading = clamp((gradientHeight-pos.z) / (gradientHeight/gradientStrength), 0.0, gradientStrength);\n    //***************************************************************************\n    vColor = color-verticalShading;\n    vec4 worldPos = uModelMatrix * pos;\n    vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n    verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n    \n    // *** shadow mapping ********\n    vec4 sunRelPosition = uSunMatrix * pos;\n    vSunRelPosition = (sunRelPosition.xyz / sunRelPosition.w + 1.0) / 2.0;\n  }\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nvarying vec2 vTexCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying vec3 vSunRelPosition;\nvarying float verticalDistanceToLowerEdge;\nuniform vec3 uFogColor;\nuniform vec2 uShadowTexDimensions;\nuniform sampler2D uShadowTexIndex;\nuniform sampler2D uWallTexIndex;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nuniform float uShadowStrength;\nuniform vec3 uLightDirection;\nuniform vec3 uLightColor;\nfloat isSeenBySun(const vec2 sunViewNDC, const float depth, const float bias) {\n  if ( clamp( sunViewNDC, 0.0, 1.0) != sunViewNDC)  //not inside sun's viewport\n    return 1.0;\n  \n  float depthFromTexture = texture2D( uShadowTexIndex, sunViewNDC.xy).x;\n  \n  //compare depth values not in reciprocal but in linear depth\n  return step(1.0/depthFromTexture, 1.0/depth + bias);\n}\nvoid main() {\n  vec3 normal = normalize(vNormal); //may degenerate during per-pixel interpolation\n  float diffuse = dot(uLightDirection, normal);\n  diffuse = max(diffuse, 0.0);\n  // reduce shadow strength with:\n  // - lowering sun positions, to be consistent with the shadows on the basemap (there,\n  //   shadows are faded out with lowering sun positions to hide shadow artifacts caused\n  //   when sun direction and map surface are almost perpendicular\n  // - large angles between the sun direction and the surface normal, to hide shadow\n  //   artifacts that occur when surface normal and sun direction are almost perpendicular\n  float shadowStrength = pow( max( min(\n    dot(uLightDirection, vec3(0.0, 0.0, 1.0)),\n    dot(uLightDirection, normal)\n  ), 0.0), 1.5);\n  if (diffuse > 0.0 && shadowStrength > 0.0) {\n    // note: the diffuse term is also the cosine between the surface normal and the\n    // light direction\n    float bias = clamp(0.0007*tan(acos(diffuse)), 0.0, 0.01);\n    vec2 pos = fract( vSunRelPosition.xy * uShadowTexDimensions);\n    \n    vec2 tl = floor(vSunRelPosition.xy * uShadowTexDimensions) / uShadowTexDimensions;\n    float tlVal = isSeenBySun( tl,                           vSunRelPosition.z, bias);\n    float trVal = isSeenBySun( tl + vec2(1.0, 0.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float blVal = isSeenBySun( tl + vec2(0.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float brVal = isSeenBySun( tl + vec2(1.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float occludedBySun = mix( \n                            mix(tlVal, trVal, pos.x), \n                            mix(blVal, brVal, pos.x),\n                            pos.y);\n    diffuse *= 1.0 - (shadowStrength * (1.0 - occludedBySun));\n  }\n  vec3 color = vColor* texture2D( uWallTexIndex, vTexCoord.st).rgb +\n              (diffuse/1.5) * uLightColor;\n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  //gl_FragColor = vec4( mix(color, uFogColor, fogIntensity), 1.0);\n  gl_FragColor = vec4( color, 1.0-fogIntensity);\n}\n"},"flatColor":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nuniform mat4 uMatrix;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform vec4 uColor;\nvoid main() {\n  gl_FragColor = uColor;\n}\n"},"skywall":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvarying float vRelativeHeight;\nfloat gradientHeight = 10.0;\nfloat gradientStrength = 1.0;\nuniform float uBendRadius;\nuniform float uBendDistance;\nuniform float uAbsoluteHeight;\nvoid main() {\n  //*** bending ***************************************************************\n//  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n//\n//  float innerRadius = uBendRadius + mwPosition.y;\n//  float depth = abs(mwPosition.z);\n//  float s = depth-uBendDistance;\n//  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n//\n//  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n//  // travels the full uBendRadius path\n//  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n//  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n//\n//  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n//  gl_Position = uProjMatrix * newPosition;\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n  vRelativeHeight = aPosition.z / uAbsoluteHeight;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float vRelativeHeight;\nvoid main() {\n  float blendFactor = min(100.0 * vRelativeHeight, 1.0);\n  vec4 texColor = texture2D(uTexIndex, vec2(vTexCoord.x, -vTexCoord.y));\n  gl_FragColor = mix( vec4(uFogColor, 1.0), texColor,  blendFactor);\n}\n"},"basemap":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjMatrix;\nuniform mat4 uMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uBendRadius;\nuniform float uBendDistance;\nvoid main() {\n  //*** bending ***************************************************************\n//  vec4 mwPosition = uViewMatrix * uModelMatrix * aPosition;\n//\n//  float innerRadius = uBendRadius + mwPosition.y;\n//  float depth = abs(mwPosition.z);\n//  float s = depth-uBendDistance;\n//  float theta = min(max(s, 0.0)/uBendRadius, halfPi);\n//\n//  // halfPi*uBendRadius, not halfPi*innerRadius, because the \"base\" of a building\n//  // travels the full uBendRadius path\n//  float newY = cos(theta)*innerRadius - uBendRadius - max(s-halfPi*uBendRadius, 0.0);\n//  float newZ = normalize(mwPosition.z) * (min(depth, uBendDistance) + sin(theta)*innerRadius);\n//\n//  vec4 newPosition = vec4(mwPosition.x, newY, newZ, 1.0);\n//  vec4 glPosition = uProjMatrix * newPosition;\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n  vec4 worldPos = uModelMatrix * aPosition;\n  vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n  verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nvoid main() {\n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  gl_FragColor = vec4(texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y)).rgb, 1.0-fogIntensity);\n}\n"},"texture":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_FragColor = vec4(texture2D(uTexIndex, vTexCoord.st).rgb, 1.0);\n}\n"},"fogNormal":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec4 aFilter;\nattribute vec3 aNormal;\nuniform mat4 uMatrix;\nuniform mat4 uModelMatrix;\nuniform mat3 uNormalMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying float verticalDistanceToLowerEdge;\nvarying vec3 vNormal;\nuniform float uTime;\nvoid main() {\n  float t = clamp((uTime-aFilter.r) / (aFilter.g-aFilter.r), 0.0, 1.0);\n  float f = aFilter.b + (aFilter.a-aFilter.b) * t;\n  if (f == 0.0) {\n    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);\n    verticalDistanceToLowerEdge = 0.0;\n  } else {\n    vec4 pos = vec4(aPosition.x, aPosition.y, aPosition.z*f, aPosition.w);\n    gl_Position = uMatrix * pos;\n    vNormal = uNormalMatrix * aNormal;\n    /* in order for the SSAO (which is based on this depth shader) to work\n     * correctly in conjunction with the fog shading, we need to replicate\n     * the fog computation here. This way, the ambient occlusion shader can\n     * later attenuate the ambient occlusion effect in the foggy areas.*/\n    vec4 worldPos = uModelMatrix * pos;\n    vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n    verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n  }\n}\n","fragment":"\n#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nvarying float verticalDistanceToLowerEdge;\nvarying vec3 vNormal;\n/* Note: the depth shader needs to not only store depth information, but\n *       also the fog intensity as well.\n * Rationale: In the current infrastructure, ambient occlusion does not \n * directly affect the building and map shading, but rather is later blended \n * onto the whole scene as a screen-space effect. This, however, is not\n * compatible with fogging: buildings in the fog gradually blend into the \n * background, but the ambient occlusion applied in screen space does not.\n * In the foggy area, this yields barely visible buildings with fully visible\n * ambient occlusion - an irritating effect.\n * To fix this, the depth shader stores not only depth values per pixel, but\n * also computes the fog intensity and stores it in the depth texture along\n * with the color-encoded depth values.\n * This way, the ambient occlusion shader can later not only compute the\n * actual ambient occlusion based on the depth values, but can attenuate\n * the effect in the foggy areas based on the fog intensity.\n */\nvoid main() {\n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  gl_FragColor = vec4(normalize(vNormal) /2.0 + 0.5, clamp(fogIntensity, 0.0, 1.0));\n}\n"},"ambientFromDepth":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n}\n","fragment":"#ifdef GL_FRAGMENT_PRECISION_HIGH\n  // we need high precision for the depth values\n  precision highp float;\n#else\n  precision mediump float;\n#endif\nuniform sampler2D uDepthTexIndex;\nuniform sampler2D uFogTexIndex;\nuniform float uInverseTexWidth;   //in 1/pixels, e.g. 1/512 if the texture is 512px wide\nuniform float uInverseTexHeight;  //in 1/pixels\nuniform float uEffectStrength;\nvarying vec2 vTexCoord;\n/* Retrieves the depth value (dx, dy) pixels away from 'pos' from texture 'uDepthTexIndex'. */\nfloat getDepth(vec2 pos, int dx, int dy)\n{\n  float z = texture2D(uDepthTexIndex, vec2(pos.s + float(dx) * uInverseTexWidth, \n                                   pos.t + float(dy) * uInverseTexHeight)).x;\n  //FIXME: terrible hack; linearize depth based on hard-coded near and far planes\n  const float n = 1.0;\n  const float f = 7500.0;\n  return (2.0 * n) / (f + n - z * (f - n));\n}\n/* getOcclusionFactor() determines a heuristic factor (from [0..1]) for how \n * much the fragment at 'pos' with depth 'depthHere'is occluded by the \n * fragment that is (dx, dy) texels away from it.\n */\nfloat getOcclusionFactor(float depthHere, vec2 pos, int dx, int dy)\n{\n    float depthThere = getDepth(pos, dx, dy);\n    /* if the fragment at (dx, dy) has no depth (i.e. there was nothing rendered there), \n     * then 'here' is not occluded (result 1.0) */\n    if (depthThere == 0.0)\n      return 1.0;\n    /* if the fragment at (dx, dy) is further away from the viewer than 'here', then\n     * 'here is not occluded' */\n    if (depthHere < depthThere )\n      return 1.0;\n      \n    float relDepthDiff = depthThere / depthHere;\n    float depthDiff = abs(depthThere - depthHere) * 7500.0; //FIXME: hard-coded far plane\n    /* if the fragment at (dx, dy) is closer to the viewer than 'here', then it occludes\n     * 'here'. The occlusion is the higher the bigger the depth difference between the two\n     * locations is.\n     * However, if the depth difference is too high, we assume that 'there' lies in a\n     * completely different depth region of the scene than 'here' and thus cannot occlude\n     * 'here'. This last assumption gets rid of very dark artifacts around tall buildings.\n     */\n    return depthDiff < 50.0 ? mix(0.99, 1.0, 1.0 - clamp(depthDiff, 0.0, 1.0)) : 1.0;\n}\n/* This shader approximates the ambient occlusion in screen space (SSAO). \n * It is based on the assumption that a pixel will be occluded by neighboring \n * pixels iff. those have a depth value closer to the camera than the original\n * pixel itself (the function getOcclusionFactor() computes this occlusion \n * by a single other pixel).\n *\n * A naive approach would sample all pixels within a given distance. For an\n * interesting-looking effect, the sampling area needs to be at least 9 pixels \n * wide (-/+ 4), requiring 81 texture lookups per pixel for ambient occlusion.\n * This overburdens many GPUs.\n * To make the ambient occlusion computation faster, we employ the following \n * tricks:\n * 1. We do not consider all texels in the sampling area, but only a select few \n *    (at most 16). This causes some sampling artifacts, which are later\n *    removed by blurring the ambient occlusion texture (this is done in a\n *    separate shader).\n * 2. The further away an object is the fewer samples are considered and the\n *    closer are these samples to the texel for which the ambient occlusion is\n *    being computed. The rationale is that ambient occlusion attempts to de-\n *    determine occlusion by *nearby* other objects. Due to the perspective \n *    projection, the further away objects are, the smaller they become. \n *    So the further away objects are, the closer are those nearby other objects\n *    in screen-space, and thus texels further away no longer need to be \n *    considered.\n *    As a positive side-effect, this also reduces the total number of texels \n *    that need to be sampled.\n */\nvoid main() {\n  float depthHere = getDepth(vTexCoord.st, 0, 0);\n  float fogIntensity = texture2D(uFogTexIndex, vTexCoord.st).w;\n  if (depthHere == 0.0)\n  {\n\t//there was nothing rendered 'here' --> it can't be occluded\n    gl_FragColor = vec4(1.0);\n    return;\n  }\n  float occlusionFactor = 1.0;\n  \n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -1,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +1,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  -1);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  +1);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -2,  -2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +2,  +2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +2,  -2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -2,  +2);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -4,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +4,   0);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  -4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,   0,  +4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -4,  -4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +4,  +4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  +4,  -4);\n  occlusionFactor *= getOcclusionFactor(depthHere, vTexCoord.st,  -4,  +4);\n  occlusionFactor = pow(occlusionFactor, 4.0) + 55.0/255.0; // empirical bias determined to let SSAO have no effect on the map plane\n  occlusionFactor = 1.0 - ((1.0 - occlusionFactor) * uEffectStrength);\n  \n  occlusionFactor = 1.0 - ((1.0- occlusionFactor) * (1.0-fogIntensity));\n  gl_FragColor = vec4( vec3(occlusionFactor) , 1.0);\n}\n"},"blur":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uMatrix;\nvarying vec2 vTexCoord;\nvoid main() {\n  gl_Position = uMatrix * aPosition;\n  vTexCoord = aTexCoord;\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform float uInverseTexWidth;   //in 1/pixels, e.g. 1/512 if the texture is 512px wide\nuniform float uInverseTexHeight;  //in 1/pixels\nvarying vec2 vTexCoord;\n/* Retrieves the texel color at (dx, dy) pixels away from 'pos' from texture 'uTexIndex'. */\nvec4 getTexel(vec2 pos, int dx, int dy)\n{\n  //retrieve the color-coded depth\n  return texture2D(uTexIndex, vec2(pos.s + float(dx) * uInverseTexWidth, \n                                   pos.t + float(dy) * uInverseTexHeight));\n}\nvoid main() {\n  vec4 center = texture2D(uTexIndex, vTexCoord);\n  vec4 nonDiagonalNeighbors = getTexel(vTexCoord, -1, 0) +\n                              getTexel(vTexCoord, +1, 0) +\n                              getTexel(vTexCoord,  0,-1) +\n                              getTexel(vTexCoord,  0,+1);\n  vec4 diagonalNeighbors =    getTexel(vTexCoord, -1,-1) +\n                              getTexel(vTexCoord, +1,+1) +\n                              getTexel(vTexCoord, -1,+1) +\n                              getTexel(vTexCoord, +1,-1);  \n  \n  //approximate Gaussian blur (mean 0.0, stdev 1.0)\n  gl_FragColor = 0.2/1.0 * center + \n                 0.5/4.0 * nonDiagonalNeighbors + \n                 0.3/4.0 * diagonalNeighbors;\n}\n"},"basemap.shadows":{"vertex":"precision highp float;  //is default in vertex shaders anyway, using highp fixes #49\nattribute vec3 aPosition;\nattribute vec3 aNormal;\nuniform mat4 uModelMatrix;\nuniform mat4 uMatrix;\nuniform mat4 uSunMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\n//varying vec2 vTexCoord;\nvarying vec3 vSunRelPosition;\nvarying vec3 vNormal;\nvarying float verticalDistanceToLowerEdge;\nvoid main() {\n  vec4 pos = vec4(aPosition.xyz, 1.0);\n  gl_Position = uMatrix * pos;\n  vec4 sunRelPosition = uSunMatrix * pos;\n  vSunRelPosition = (sunRelPosition.xyz / sunRelPosition.w + 1.0) / 2.0;\n  vNormal = aNormal;\n  vec4 worldPos = uModelMatrix * pos;\n  vec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\n  verticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fragment":"#ifdef GL_ES\n  precision mediump float;\n#endif\n/* This shader computes the diffuse brightness of the map layer. It does *not* \n * render the map texture itself, but is instead intended to be blended on top\n * of an already rendered map.\n * Note: this shader is not (and does not attempt to) be physically correct.\n *       It is intented to be a blend between a useful illustration of cast\n *       shadows and a mitigation of shadow casting artifacts occuring at\n *       low angles on incidence.\n *       Map brightness is only affected by shadows, not by light direction.\n *       Shadows are darkest when light comes from straight above (and thus\n *       shadows can be computed reliably) and become less and less visible\n *       with the light source close to the horizont (where moirC) and offset\n *       artifacts would otherwise be visible).\n */\n//uniform sampler2D uTexIndex;\nuniform sampler2D uShadowTexIndex;\nuniform vec3 uFogColor;\nuniform vec3 uDirToSun;\nuniform vec2 uShadowTexDimensions;\nuniform float uShadowStrength;\nvarying vec2 vTexCoord;\nvarying vec3 vSunRelPosition;\nvarying vec3 vNormal;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nfloat isSeenBySun( const vec2 sunViewNDC, const float depth, const float bias) {\n  if ( clamp( sunViewNDC, 0.0, 1.0) != sunViewNDC)  //not inside sun's viewport\n    return 1.0;\n  \n  float depthFromTexture = texture2D( uShadowTexIndex, sunViewNDC.xy).x;\n  \n  //compare depth values not in reciprocal but in linear depth\n  return step(1.0/depthFromTexture, 1.0/depth + bias);\n}\nvoid main() {\n  //vec2 tl = floor(vSunRelPosition.xy * uShadowTexDimensions) / uShadowTexDimensions;\n  //gl_FragColor = vec4(vec3(texture2D( uShadowTexIndex, tl).x), 1.0);\n  //return;\n  float diffuse = dot(uDirToSun, normalize(vNormal));\n  diffuse = max(diffuse, 0.0);\n  \n  float shadowStrength = uShadowStrength * pow(diffuse, 1.5);\n  if (diffuse > 0.0) {\n    // note: the diffuse term is also the cosine between the surface normal and the\n    // light direction\n    float bias = clamp(0.0007*tan(acos(diffuse)), 0.0, 0.01);\n    \n    vec2 pos = fract( vSunRelPosition.xy * uShadowTexDimensions);\n    \n    vec2 tl = floor(vSunRelPosition.xy * uShadowTexDimensions) / uShadowTexDimensions;\n    float tlVal = isSeenBySun( tl,                           vSunRelPosition.z, bias);\n    float trVal = isSeenBySun( tl + vec2(1.0, 0.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float blVal = isSeenBySun( tl + vec2(0.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    float brVal = isSeenBySun( tl + vec2(1.0, 1.0) / uShadowTexDimensions, vSunRelPosition.z, bias);\n    diffuse = mix( mix(tlVal, trVal, pos.x), \n                   mix(blVal, brVal, pos.x),\n                   pos.y);\n  }\n  diffuse = mix(1.0, diffuse, shadowStrength);\n  \n  float fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\n  fogIntensity = clamp(fogIntensity, 0.0, 1.0);\n  float darkness = (1.0 - diffuse);\n  darkness *=  (1.0 - fogIntensity);\n  gl_FragColor = vec4(vec3(1.0 - darkness), 1.0);\n}\n"}};
 
 
 var Grid = function(source, tileClass, options) {
@@ -4047,7 +4154,7 @@ Grid.prototype = {
     var s = 'abcd'[(x+y) % 4];
     return pattern(this.source, { s:s, x:x, y:y, z:z });
   },
-
+  
   getClosestTiles: function(tileList, referencePoint) {
     tileList.sort(function(a, b) {
       // tile coordinates correspond to the tile's upper left corner, but for
@@ -4057,7 +4164,7 @@ Grid.prototype = {
 
       var distB = Math.pow(b[0] + 0.5 - referencePoint[0], 2.0) +
                   Math.pow(b[1] + 0.5 - referencePoint[1], 2.0);
-
+      
       return distA > distB;
     });
 
@@ -4073,11 +4180,11 @@ Grid.prototype = {
       return true;
     });
   },
-
+  
   /* Returns a set of tiles based on 'tiles' (at zoom level 'zoom'),
    * but with those tiles recursively replaced by their respective parent tile
    * (tile from zoom level 'zoom'-1 that contains 'tile') for which said parent
-   * tile covers less than 'pixelAreaThreshold' pixels on screen based on the
+   * tile covers less than 'pixelAreaThreshold' pixels on screen based on the 
    * current view-projection matrix.
    *
    * The returned tile set is duplicate-free even if there were duplicates in
@@ -4088,7 +4195,7 @@ Grid.prototype = {
     var tileSet = {};
     var tileList = [];
     var key;
-
+    
     //if there is no parent zoom level
     if (zoom === 0 || zoom <= this.minZoom) {
       for (key in tiles) {
@@ -4096,18 +4203,18 @@ Grid.prototype = {
       }
       return tiles;
     }
-
+    
     for (key in tiles) {
       var tile = tiles[key];
 
       var parentX = (tile[0] <<0) / 2;
       var parentY = (tile[1] <<0) / 2;
-
+      
       if (parentTiles[ [parentX, parentY] ] === undefined) { //parent tile screen size unknown
         var numParentScreenPixels = getTileSizeOnScreen(parentX, parentY, zoom-1, render.viewProjMatrix);
         parentTiles[ [parentX, parentY] ] = (numParentScreenPixels < pixelAreaThreshold);
       }
-
+      
       if (! parentTiles[ [parentX, parentY] ]) { //won't be replaced by a parent tile -->keep
         if (tileSet[ [tile[0], tile[1]] ] === undefined) {  //remove duplicates
           tileSet[ [tile[0], tile[1]]] = true;
@@ -4115,20 +4222,20 @@ Grid.prototype = {
         }
       }
     }
-
+    
     var parentTileList = [];
-
+    
     for (key in parentTiles) {
       if (parentTiles[key]) {
         var parentTile = key.split(',');
         parentTileList.push( [parseInt(parentTile[0]), parseInt(parentTile[1]), zoom-1]);
       }
     }
-
+    
     if (parentTileList.length > 0) {
       parentTileList = this.mergeTiles(parentTileList, zoom - 1, pixelAreaThreshold);
     }
-
+      
     return tileList.concat(parentTileList);
   },
 
@@ -4166,7 +4273,7 @@ Grid.prototype = {
     tiles = ( this.fixedZoom ) ?
       this.getClosestTiles(tiles, mapCenterTile) :
       this.mergeTiles(tiles, zoom, 0.5 * TILE_SIZE * TILE_SIZE);
-
+    
     this.visibleTiles = {};
     for (i = 0; i < tiles.length; i++) {
       if (tiles[i][2] === undefined) {
@@ -4254,6 +4361,7 @@ Grid.prototype = {
       this.tiles[key].destroy();
     }
     this.tiles = [];
+    this.visibleTiles = {};
   }
 };
 
@@ -4628,7 +4736,7 @@ mesh.GeoJSON = (function() {
  *
  * A 'MapPlane' is untextured and featureless. Its intended use is as a stand-in
  * for a 'BaseMap' in situations where either using the actual BaseMap would be
- * inefficient (e.g. when the BaseMap would be rendered without a texture) or
+ * inefficient (e.g. when the BaseMap would be rendered without a texture) or 
  * no BaseMap is present (e.g. if OSMBuildings is used as an overlay to Leaflet
  * or MapBoxGL). This mostly applies to creating depth and normal textures of the
  * scene, not to the actual shaded scene rendering.
@@ -4655,7 +4763,7 @@ mesh.MapPlane = (function() {
   constructor.prototype = {
 
     createGlGeometry: function() {
-      /* This method creates front and back faces, in case rendering
+      /* This method creates front and back faces, in case rendering 
        * effect requires both. */
       var NUM_SEGMENTS = 50;
       var segmentSize = 2*this.radius / NUM_SEGMENTS;
@@ -4669,17 +4777,17 @@ mesh.MapPlane = (function() {
       var filterEntry = [0, 1, 1, 1];
       var filterEntries = [].concat(filterEntry, filterEntry, filterEntry,
                                     filterEntry, filterEntry, filterEntry);
-
+      
       for (var x = 0; x < NUM_SEGMENTS; x++)
         for (var y = 0; y < NUM_SEGMENTS; y++) {
-
-
+          
+          
           var baseX = -this.radius + x*segmentSize;
           var baseY = -this.radius + y*segmentSize;
           this.vertexBuffer.push( baseX,               baseY, 0,
                                   baseX + segmentSize, baseY + segmentSize, 0,
                                   baseX + segmentSize, baseY, 0,
-
+                                  
                                   baseX,               baseY, 0,
                                   baseX,               baseY + segmentSize, 0,
                                   baseX + segmentSize, baseY + segmentSize, 0);
@@ -4698,11 +4806,11 @@ mesh.MapPlane = (function() {
           [].push.apply(this.filterBuffer, filterEntries);
           [].push.apply(this.filterBuffer, filterEntries);
       }
-
+       
       this.vertexBuffer = new glx.Buffer(3, new Float32Array(this.vertexBuffer));
       this.normalBuffer = new glx.Buffer(3, new Float32Array(this.normalBuffer));
       this.filterBuffer = new glx.Buffer(4, new Float32Array(this.filterBuffer));
-
+       
     },
 
     // TODO: switch to a notation like mesh.transform
@@ -4711,7 +4819,7 @@ mesh.MapPlane = (function() {
 
       var modelMatrix = new glx.Matrix();
       //modelMatrix.scale(scale, scale, scale);
-
+    
       return modelMatrix;
     },
 
@@ -4759,7 +4867,7 @@ mesh.DebugQuad = (function() {
       this.v2 = v2;
       this.v3 = v3;
       this.v4 = v4;
-
+      
       if (this.vertexBuffer)
         this.vertexBuffer.destroy();
 
@@ -4771,27 +4879,27 @@ mesh.DebugQuad = (function() {
         0.0, 0.0,
           1, 0.0,
           1,   1,
-
+        
         0.0, 0.0,
           1,   1,
         0.0,   1]));*/
 
       if (this.normalBuffer)
         this.normalBuffer.destroy();
-
+        
       this.normalBuffer = new glx.Buffer(3, new Float32Array([
         0, 0, 1,
         0, 0, 1,
         0, 0, 1,
-
+        
         0, 0, 1,
         0, 0, 1,
         0, 0, 1]));
-
+      
       var color = [1, 0.5, 0.25];
       if (this.colorBuffer)
         this.colorBuffer.destroy();
-
+        
       this.colorBuffer = new glx.Buffer(3, new Float32Array(
         [].concat(color, color, color, color, color, color)));
 
@@ -4801,15 +4909,15 @@ mesh.DebugQuad = (function() {
 
       this.idBuffer = new glx.Buffer(3, new Float32Array(
         [].concat(color, color, color, color, color, color)));
-
+        
       this.texCoordBuffer = new glx.Buffer(2, new Float32Array(
         [0,0,0,0,0,0,0,0,0,0,0,0]));
-
+        
       var filter = [0,1,1,1];
-
+      
       this.filterBuffer = new glx.Buffer(4, new Float32Array(
         [].concat(filter, filter, filter, filter, filter, filter)));
-
+        
       //this.numDummyVertices = 6;
     },
 
@@ -4818,7 +4926,7 @@ mesh.DebugQuad = (function() {
       //var scale = render.fogRadius/this.radius;
       var modelMatrix = new glx.Matrix();
       //modelMatrix.scale(scale, scale, scale);
-
+    
       return modelMatrix;
     },
 
@@ -4835,8 +4943,6 @@ mesh.DebugQuad = (function() {
 }());
 
 mesh.OBJ = (function() {
-
-  var vertexIndex = [];
 
   function parseMTL(str) {
     var
@@ -4882,6 +4988,7 @@ mesh.OBJ = (function() {
 
   function parseOBJ(str, materials) {
     var
+      vertexIndex = [],
       lines = str.split(/[\r\n]/g), cols,
       meshes = [],
       id,
@@ -4894,13 +5001,13 @@ mesh.OBJ = (function() {
       switch (cols[0]) {
         case 'g':
         case 'o':
-          storeOBJ(meshes, id, color, faces);
+          storeOBJ(vertexIndex, meshes, id, color, faces);
           id = cols[1];
           faces = [];
           break;
 
         case 'usemtl':
-          storeOBJ(meshes, id, color, faces);
+          storeOBJ(vertexIndex, meshes, id, color, faces);
           if (materials[ cols[1] ]) {
             color = materials[ cols[1] ];
           }
@@ -4917,15 +5024,15 @@ mesh.OBJ = (function() {
       }
     }
 
-    storeOBJ(meshes, id, color, faces);
+    storeOBJ(vertexIndex, meshes, id, color, faces);
     str = null;
 
     return meshes;
   }
 
-  function storeOBJ(meshes, id, color, faces) {
+  function storeOBJ(vertexIndex, meshes, id, color, faces) {
     if (faces.length) {
-      var geometry = createGeometry(faces);
+      var geometry = createGeometry(vertexIndex, faces);
       meshes.push({
         id: id,
         color: color,
@@ -4936,7 +5043,7 @@ mesh.OBJ = (function() {
     }
   }
 
-  function createGeometry(faces) {
+  function createGeometry(vertexIndex, faces) {
     var
       v0, v1, v2,
       e1, e2,
@@ -5029,8 +5136,7 @@ mesh.OBJ = (function() {
   constructor.prototype = {
     onLoad: function(obj, mtl) {
       this.items = [];
-      // TODO: add single parsed items directly and save intermediate data storage
-      this.addItems(parseOBJ(obj, mtl));
+      this.addItems( parseOBJ(obj, mtl) );
       this.onReady();
     },
 
@@ -5117,15 +5223,15 @@ mesh.OBJ = (function() {
         matrix.rotateZ(-this.rotation);
       }
 
-      var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE *
+      var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE * 
                                      Math.cos(MAP.position.latitude / 180 * Math.PI);
 
       var dLat = this.position.latitude - MAP.position.latitude;
       var dLon = this.position.longitude- MAP.position.longitude;
-
+      
       matrix.translate( dLon * metersPerDegreeLongitude,
                        -dLat * METERS_PER_DEGREE_LATITUDE, 0);
-
+      
       return matrix;
     },
 
@@ -5184,28 +5290,28 @@ function getDistancePointLine2( line1, line2, p) {
 } */
 
 /*  given a pixel's (integer) position through which the line 'segmentStart' ->
- *  'segmentEnd' passes, this method returns the one neighboring pixel of
- *  'currentPixel' that would be traversed next if the line is followed in
+ *  'segmentEnd' passes, this method returns the one neighboring pixel of 
+ *  'currentPixel' that would be traversed next if the line is followed in 
  *  the direction from 'segmentStart' to 'segmentEnd' (even if the next point
  *  would lie beyond 'segmentEnd'. )
  */
 function getNextPixel(segmentStart, segmentEnd, currentPixel) {
 
-  var vInc = [segmentStart[0] < segmentEnd[0] ? 1 : -1,
+  var vInc = [segmentStart[0] < segmentEnd[0] ? 1 : -1, 
               segmentStart[1] < segmentEnd[1] ? 1 : -1];
-
+         
   var nextX = currentPixel[0] + (segmentStart[0] < segmentEnd[0] ?  +1 : 0);
   var nextY = currentPixel[1] + (segmentStart[1] < segmentEnd[1] ?  +1 : 0);
-
+  
   // position of the edge to the next pixel on the line 'segmentStart'->'segmentEnd'
   var alphaX = (nextX - segmentStart[0])/ (segmentEnd[0] - segmentStart[0]);
   var alphaY = (nextY - segmentStart[1])/ (segmentEnd[1] - segmentStart[1]);
-
+  
   // neither value is valid
   if ((alphaX <= 0.0 || alphaX > 1.0) && (alphaY <= 0.0 || alphaY > 1.0)) {
     return [undefined, undefined];
   }
-
+    
   if (alphaX <= 0.0 || alphaX > 1.0) { // only alphaY is valid
     return [currentPixel[0], currentPixel[1] + vInc[1]];
   }
@@ -5213,14 +5319,14 @@ function getNextPixel(segmentStart, segmentEnd, currentPixel) {
   if (alphaY <= 0.0 || alphaY > 1.0) { // only alphaX is valid
     return [currentPixel[0] + vInc[0], currentPixel[1]];
   }
-
+    
   return alphaX < alphaY ? [currentPixel[0]+vInc[0], currentPixel[1]] :
                            [currentPixel[0],         currentPixel[1] + vInc[1]];
 }
 
 /* returns all pixels that are at least partially covered by the triangle
- * p1-p2-p3.
- * Note: the returned array of pixels *will* contain duplicates that may need
+ * p1-p2-p3. 
+ * Note: the returned array of pixels *will* contain duplicates that may need 
  * to be removed.
  */
 function rasterTriangle(p1, p2, p3) {
@@ -5231,17 +5337,17 @@ function rasterTriangle(p1, p2, p3) {
   p1 = points[0];
   p2 = points[1];
   p3 = points[2];
-
+  
   if (p1[1] == p2[1])
     return rasterFlatTriangle( p1, p2, p3);
-
+    
   if (p2[1] == p3[1])
     return rasterFlatTriangle( p2, p3, p1);
 
   var alpha = (p2[1] - p1[1]) / (p3[1] - p1[1]);
   //point on the line p1->p3 with the same y-value as p2
   var p4 = [p1[0] + alpha*(p3[0]-p1[0]), p2[1]];
-
+  
   /*  P3
    *   |\
    *   | \
@@ -5264,7 +5370,7 @@ function rasterTriangle(p1, p2, p3) {
  *  | \_
  *  |   \_
  *  |     \_
- * f0/f1--f1/f0
+ * f0/f1--f1/f0  
  */
 function rasterFlatTriangle( flat0, flat1, other ) {
 
@@ -5280,7 +5386,7 @@ function rasterFlatTriangle( flat0, flat1, other ) {
     flat0 = flat1;
     flat1 = tmp;
   }
-
+  
   var leftRasterPos = [other[0] <<0, other[1] <<0];
   var rightRasterPos = leftRasterPos.slice(0);
   points.push(leftRasterPos.slice(0));
@@ -5297,19 +5403,19 @@ function rasterFlatTriangle( flat0, flat1, other ) {
       leftRasterPos = getNextPixel(other, flat0, leftRasterPos);
     } while (leftRasterPos[1]*yDir <= y*yDir);
     leftRasterPos = prevLeftRasterPos;
-
+    
     do {
       points.push( rightRasterPos.slice(0));
       prevRightRasterPos = rightRasterPos;
       rightRasterPos = getNextPixel(other, flat1, rightRasterPos);
     } while (rightRasterPos[1]*yDir <= y*yDir);
     rightRasterPos = prevRightRasterPos;
-
+    
     for (var x = leftRasterPos[0]; x <= rightRasterPos[0]; x++) {
       points.push([x, y]);
     }
   }
-
+  
   return points;
 }
 
@@ -5338,7 +5444,7 @@ function normal(a, b, c) {
  * screen. The quad is returned in tile coordinates for tile zoom level
  * 'tileZoomLevel', and thus can directly be used to determine which basemap
  * and geometry tiles need to be loaded.
- * Note: if the horizon is level (as should usually be the case for
+ * Note: if the horizon is level (as should usually be the case for 
  * OSMBuildings) then said quad is also a trapezoid. */
 function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
   /* maximum distance from the map center at which
@@ -5354,7 +5460,7 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
 
   /* If even the lower edge of the screen does not intersect with the map plane,
    * then the map plane is not visible at all.
-   * (Or somebody screwed up the projection matrix, putting the view upside-down
+   * (Or somebody screwed up the projection matrix, putting the view upside-down 
    *  or something. But in any case we won't attempt to create a view rectangle).
    */
   if (!vBottomLeft || !vBottomRight) {
@@ -5367,7 +5473,7 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
   /* The lower screen edge shows the map layer, but the upper one does not.
    * This usually happens when the camera is close to parallel to the ground
    * so that the upper screen edge lies above the horizon. This is not a bug
-   * and can legitimately happen. But from a theoretical standpoint, this means
+   * and can legitimately happen. But from a theoretical standpoint, this means 
    * that the view 'trapezoid' stretches infinitely toward the horizon. Since this
    * is not a practically useful result - though formally correct - we instead
    * manually bound that area.*/
@@ -5377,7 +5483,7 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
     vLeftDir = norm2(sub2( vLeftPoint, vBottomLeft));
     f = dot2(vLeftDir, viewDirOnMap);
     vTopLeft = add2( vBottomLeft, mul2scalar(vLeftDir, maxFarEdgeDistance/f));
-
+    
     vRightPoint = getIntersectionWithXYPlane( 1, -0.9, inverse);
     vRightDir = norm2(sub2(vRightPoint, vBottomRight));
     f = dot2(vRightDir, viewDirOnMap);
@@ -5398,7 +5504,7 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
     f = dot2(vRightDir, viewDirOnMap);
     vTopRight = add2( vBottomRight, mul2scalar(vRightDir, maxFarEdgeDistance/f));
  }
-
+ 
   return [vBottomLeft, vBottomRight, vTopRight, vTopLeft];
 }
 
@@ -5406,8 +5512,8 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
 /* Returns an orthographic projection matrix whose view rectangle contains all
  * points of 'points' when watched from the position given by targetViewMatrix.
  * The depth range of the returned matrix is [near, far].
- * The 'points' are given as euclidean coordinates in [m] distance to the
- * current reference point (MAP.position).
+ * The 'points' are given as euclidean coordinates in [m] distance to the 
+ * current reference point (MAP.position). 
  */
 function getCoveringOrthoProjection(points, targetViewMatrix, near, far, height) {
   var p0 = transformVec3(targetViewMatrix.data, points[0]);
@@ -5423,7 +5529,7 @@ function getCoveringOrthoProjection(points, targetViewMatrix, near, far, height)
     top  = Math.max( top,   p[1]);
     bottom=Math.min( bottom,p[1]);
   }
-
+  
   return new glx.Matrix.Ortho(left, right, top, bottom, near, far);
 }
 
@@ -5465,41 +5571,41 @@ function getIntersectionWithXYPlane(screenNdcX, screenNdcY, inverseTransform) {
   var lambda = -v1[2]/vDir[2];
   var pos = add3( v1, mul3scalar(vDir, lambda));
 
-  return [pos[0], pos[1]];  // z==0
+  return [pos[0], pos[1]];  // z==0 
 }
 
-/* Returns: the number of screen pixels that would be covered by the tile
+/* Returns: the number of screen pixels that would be covered by the tile 
  *          tileZoom/tileX/tileY *if* the screen would not end at the viewport
- *          edges. The intended use of this method is to return a measure of
+ *          edges. The intended use of this method is to return a measure of 
  *          how detailed the tile should be rendered.
  * Note: This method does not clip the tile to the viewport. So the number
  *       returned will be larger than the number of screen pixels covered iff.
- *       the tile intersects with a viewport edge.
+ *       the tile intersects with a viewport edge. 
  */
 function getTileSizeOnScreen(tileX, tileY, tileZoom, viewProjMatrix) {
-  var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE *
+  var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE * 
                                  Math.cos(MAP.position.latitude / 180 * Math.PI);
   var tileLon = tile2lon(tileX, tileZoom);
   var tileLat = tile2lat(tileY, tileZoom);
-
+  
   var modelMatrix = new glx.Matrix();
   modelMatrix.translate( (tileLon - MAP.position.longitude)* metersPerDegreeLongitude,
                         -(tileLat - MAP.position.latitude) * METERS_PER_DEGREE_LATITUDE, 0);
 
   var size = getTileSizeInMeters( MAP.position.latitude, tileZoom);
-
+  
   var mvpMatrix = glx.Matrix.multiply(modelMatrix, viewProjMatrix);
   var tl = transformVec3(mvpMatrix, [0   , 0   , 0]);
   var tr = transformVec3(mvpMatrix, [size, 0   , 0]);
   var bl = transformVec3(mvpMatrix, [0   , size, 0]);
   var br = transformVec3(mvpMatrix, [size, size, 0]);
   var verts = [tl, tr, bl, br];
-  for (var i in verts) {
+  for (var i in verts) { 
     // transformation from NDC [-1..1] to viewport [0.. width/height] coordinates
     verts[i][0] = (verts[i][0] + 1.0) / 2.0 * MAP.width;
     verts[i][1] = (verts[i][1] + 1.0) / 2.0 * MAP.height;
   }
-
+  
   return getConvexQuadArea( [tl, tr, br, bl]);
 }
 
@@ -5508,30 +5614,30 @@ function getTriangleArea(p1, p2, p3) {
   var a = len2(sub2( p1, p2));
   var b = len2(sub2( p1, p3));
   var c = len2(sub2( p2, p3));
-
+  
   //Heron's formula
   var s = 0.5 * (a+b+c);
   return Math.sqrt( s * (s-a) * (s-b) * (s-c));
 }
 
 function getConvexQuadArea(quad) {
-  return getTriangleArea( quad[0], quad[1], quad[2]) +
+  return getTriangleArea( quad[0], quad[1], quad[2]) + 
          getTriangleArea( quad[0], quad[2], quad[3]);
 }
 
 function getTileSizeInMeters( latitude, zoom) {
-  return EARTH_CIRCUMFERENCE_IN_METERS * Math.cos(latitude / 180 * Math.PI) /
+  return EARTH_CIRCUMFERENCE_IN_METERS * Math.cos(latitude / 180 * Math.PI) / 
          Math.pow(2, zoom);
 }
 
 function getTilePositionFromLocal(localXY, zoom) {
-
-  var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE *
+  
+  var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE * 
                                  Math.cos(MAP.position.latitude / 180 * Math.PI);
 
   var longitude= MAP.position.longitude + localXY[0] / metersPerDegreeLongitude;
   var latitude = MAP.position.latitude -  localXY[1] / METERS_PER_DEGREE_LATITUDE;
-
+  
   return [long2tile(longitude, zoom), lat2tile(latitude, zoom)];
 }
 
@@ -5539,7 +5645,7 @@ function getTilePositionFromLocal(localXY, zoom) {
 function long2tile(lon,zoom) { return (lon+180)/360*Math.pow(2,zoom); }
 function lat2tile(lat,zoom)  { return (1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,zoom); }
 function tile2lon(x,z) { return (x/Math.pow(2,z)*360-180); }
-function tile2lat(y,z) {
+function tile2lat(y,z) { 
   var n = Math.PI-2*Math.PI*y/Math.pow(2,z);
   return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
 }
@@ -5605,7 +5711,7 @@ var render = {
     gl.enable(gl.DEPTH_TEST);
 
     render.Picking.init(); // renders only on demand
-    render.Sky = new render.SkyWall();
+    render.sky = new render.SkyWall();
     render.Buildings.init();
     render.Basemap.init();
     render.Overlay.init();
@@ -5614,10 +5720,10 @@ var render = {
     //render.HudRect.init();
     //render.NormalMap.init();
     render.MapShadows.init();
-    render.CameraGBuffer = new render.DepthFogNormalMap();
-    render.SunGBuffer    = new render.DepthFogNormalMap();
-
-    render.SunGBuffer.framebufferConfig = {
+    render.cameraGBuffer = new render.DepthFogNormalMap();
+    render.sunGBuffer    = new render.DepthFogNormalMap();
+    
+    render.sunGBuffer.framebufferConfig = {
       width:      SHADOW_DEPTH_MAP_SIZE,
       height:     SHADOW_DEPTH_MAP_SIZE,
       usedWidth:  SHADOW_DEPTH_MAP_SIZE,
@@ -5625,7 +5731,7 @@ var render = {
       tcLeft:     0.0,
       tcTop:      0.0,
       tcRight:    1.0,
-      tcBottom:   1.0
+      tcBottom:   1.0 
     };
 
     //var quad = new mesh.DebugQuad();
@@ -5634,12 +5740,12 @@ var render = {
 
     requestAnimationFrame( this.renderFrame.bind(this));
   },
-
+  
   renderFrame: function() {
     Filter.nextTick();
     requestAnimationFrame( this.renderFrame.bind(this));
 
-    this.onChange();
+    this.onChange();    
     gl.clearColor(this.fogColor[0], this.fogColor[1], this.fogColor[2], 0.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -5654,25 +5760,25 @@ var render = {
                         [viewTrapezoid[3][0], viewTrapezoid[3][1], 1.0]);*/
 
     Sun.updateView(viewTrapezoid);
-    render.Sky.updateGeometry(viewTrapezoid);
+    render.sky.updateGeometry(viewTrapezoid);
 
     if (!render.effects.shadows) {
       render.Buildings.render();
       render.Basemap.render();
       gl.enable(gl.BLEND);
-      gl.blendFuncSeparate(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA, gl.ONE, gl.ONE);
-      gl.disable(gl.DEPTH_TEST);
-      render.Sky.render();
+      gl.blendFuncSeparate(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA, gl.ONE, gl.ONE); 
+      gl.disable(gl.DEPTH_TEST);      
+      render.sky.render();
       gl.disable(gl.BLEND);
       gl.enable(gl.DEPTH_TEST);
     } else {
       var config = this.getFramebufferConfig(MAP.width, MAP.height, gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
-      render.CameraGBuffer.render(this.viewMatrix, this.projMatrix, config, true);
-      render.SunGBuffer.render(Sun.viewMatrix, Sun.projMatrix);
-      render.AmbientMap.render(render.CameraGBuffer.getDepthTexture(), render.CameraGBuffer.getFogNormalTexture(), config, 2.0);
+      render.cameraGBuffer.render(this.viewMatrix, this.projMatrix, config, true);
+      render.sunGBuffer.render(Sun.viewMatrix, Sun.projMatrix);
+      render.AmbientMap.render(render.cameraGBuffer.getDepthTexture(), render.cameraGBuffer.getFogNormalTexture(), config, 2.0);
       render.Blur.render(render.AmbientMap.framebuffer.renderTexture, config);
-      render.Buildings.render(render.SunGBuffer.framebuffer, 0.5);
+      render.Buildings.render(render.sunGBuffer.framebuffer, 0.5);
       render.Basemap.render();
 
       gl.enable(gl.BLEND);
@@ -5681,11 +5787,11 @@ var render = {
         // this aplies the shadow and SSAO effects (which selectively darken the scene)
         // while keeping the alpha channel (that corresponds to how much the
         // geometry should be blurred into the background in the next step) intact
-        gl.blendFuncSeparate(gl.ZERO, gl.SRC_COLOR, gl.ZERO, gl.ONE);
-        render.MapShadows.render(Sun, render.SunGBuffer.framebuffer, 0.5);
+        gl.blendFuncSeparate(gl.ZERO, gl.SRC_COLOR, gl.ZERO, gl.ONE); 
+        render.MapShadows.render(Sun, render.sunGBuffer.framebuffer, 0.5);
         render.Overlay.render( render.Blur.framebuffer.renderTexture, config);
 
-        // linear interpolation between the colors of the current framebuffer
+        // linear interpolation between the colors of the current framebuffer 
         // ( =building geometries) and of the sky. The interpolation factor
         // is the geometry alpha value, which contains the 'foggyness' of each pixel
         // the alpha interpolation functions is set to gl.ONE for both operands
@@ -5694,18 +5800,18 @@ var render = {
         // over its background.
         gl.blendFuncSeparate(gl.ONE_MINUS_DST_ALPHA, gl.DST_ALPHA, gl.ONE, gl.ONE);
         gl.disable(gl.DEPTH_TEST);
-        render.Sky.render();
+        render.sky.render();
         gl.enable(gl.DEPTH_TEST);
       }
       gl.disable(gl.BLEND);
 
-      //render.HudRect.render( render.SunGBuffer.getFogNormalTexture(), config );
+      //render.HudRect.render( render.sunGBuffer.getFogNormalTexture(), config );
     }
 
     if (this.screenshotCallback) {
       this.screenshotCallback(gl.canvas.toDataURL());
       this.screenshotCallback = null;
-    }
+    }  
   },
 
   stop: function() {
@@ -5714,7 +5820,7 @@ var render = {
 
   updateFogDistance: function() {
     var inverse = glx.Matrix.invert(this.viewProjMatrix.data);
-
+    
     //need to store this as a reference point to determine fog distance
     this.lowerLeftOnMap = getIntersectionWithXYPlane(-1, -1, inverse);
     if (this.lowerLeftOnMap === undefined) {
@@ -5731,7 +5837,7 @@ var render = {
   },
 
   onChange: function() {
-    var
+    var 
       scale = 1.38*Math.pow(2, MAP.zoom-17),
       width = MAP.width,
       height = MAP.height,
@@ -5750,13 +5856,13 @@ var render = {
 
 
     // OSMBuildings' perspective camera is ... special: The reference point for
-    // camera movement, rotation and zoom is at the screen center (as usual).
+    // camera movement, rotation and zoom is at the screen center (as usual). 
     // But the center of projection is not at the screen center as well but at
     // the bottom center of the screen. This projection was chosen for artistic
     // reasons so that when the map is seen from straight above, vertical building
     // walls would not be seen to face towards the screen center but would
     // uniformly face downward on the screen.
-
+    
     // To achieve this projection, we need to
     // 1. shift the whole geometry up half a screen (so that the desired
     //    center of projection aligns with the view center) *in world coordinates*.
@@ -5765,7 +5871,7 @@ var render = {
     // 3. shift the geometry back down half a screen now *in screen coordinates*
 
     this.projMatrix = new glx.Matrix()
-      .translate(0, -height/(2.0*scale), 0) // 0, MAP y offset to neutralize camera y offset,
+      .translate(0, -height/(2.0*scale), 0) // 0, MAP y offset to neutralize camera y offset, 
       .scale(1, -1, 1) // flip Y
       .multiply(new glx.Matrix.Perspective(refVFOV * height / refHeight, width/height, 1, 7500))
       .translate(0, -1, 0); // camera y offset
@@ -5786,13 +5892,13 @@ var render = {
 
     this.stop();
     render.Picking.destroy();
-    render.Sky.destroy();
+    render.sky.destroy();
     render.Buildings.destroy();
     render.Basemap.destroy();
 
-    render.NormalMap.destroy();
-    render.CameraViewDepthMap.destroy();
-    render.SunViewDepthMap.destroy();
+    render.cameraGBuffer.destroy();
+    render.sunGBuffer.destroy();
+    
     render.AmbientMap.destroy();
     render.Blur.destroy();
   }
@@ -5920,7 +6026,7 @@ var Sun = {
       .translate(0, 0, -5000)
       .scale(1, -1, 1); // flip Y
   },
-
+  
   updateView: function(coveredGroundVertices) {
     // TODO: could parts be pre-calculated?
     this.projMatrix = getCoveringOrthoProjection(
@@ -5936,25 +6042,25 @@ var Sun = {
 
 
 render.SkyWall = function() {
-
+    
   this.v1 = this.v2 = this.v3 = this.v4 = [false, false, false];
   this.updateGeometry( [[0,0,0], [0,0,0], [0,0,0], [0,0,0]]);
 
   this.shader = new glx.Shader({
-    vertexShader: Shaders.skydome.vertex,
-    fragmentShader: Shaders.skydome.fragment,
+    vertexShader: Shaders.skywall.vertex,
+    fragmentShader: Shaders.skywall.fragment,
     shaderName: 'sky wall shader',
     attributes: ['aPosition', 'aTexCoord'],
     uniforms: ['uAbsoluteHeight', 'uMatrix', 'uTexIndex', 'uFogColor']
   });
-
+  
   this.floorShader = new glx.Shader({
     vertexShader:   Shaders.flatColor.vertex,
     fragmentShader: Shaders.flatColor.fragment,
     attributes: ['aPosition'],
     uniforms:   ['uColor', 'uMatrix']
   });
-
+  
   Activity.setBusy();
   var url = APP.baseURL + '/skydome.jpg';
   this.texture = new glx.texture.Image().load(url, function(image) {
@@ -5966,7 +6072,7 @@ render.SkyWall = function() {
 };
 
 render.SkyWall.prototype.updateGeometry = function(viewTrapezoid) {
-
+  
   var v1 = [viewTrapezoid[3][0], viewTrapezoid[3][1], 0.0];
   var v2 = [viewTrapezoid[2][0], viewTrapezoid[2][1], 0.0];
   var v3 = [viewTrapezoid[2][0], viewTrapezoid[2][1], SKYWALL_HEIGHT];
@@ -5994,12 +6100,12 @@ render.SkyWall.prototype.updateGeometry = function(viewTrapezoid) {
 
   var inverse = glx.Matrix.invert(render.viewProjMatrix.data);
   var vBottomCenter = getIntersectionWithXYPlane(0, -1, inverse);
-
+  
   var vLeftDir = norm2(sub2( v1, vBottomCenter));
   var vRightDir =norm2(sub2( v2, vBottomCenter));
   var vLeftArc = Math.atan2(vLeftDir[1],  vLeftDir[0])/  (2*Math.PI);
   var vRightArc= Math.atan2(vRightDir[1], vRightDir[0])/ (2*Math.PI);
-
+  
   if (vLeftArc > vRightArc)
     vRightArc +=1;
   //console.log(vLeftArc, vRightArc);
@@ -6007,18 +6113,18 @@ render.SkyWall.prototype.updateGeometry = function(viewTrapezoid) {
   var visibleSkyDiameterFraction = Math.asin(dot2( vLeftDir, vRightDir))/ (2*Math.PI);
   var tcLeft = vLeftArc;//MAP.rotation/360.0;
   var tcRight =vRightArc;//MAP.rotation/360.0 + visibleSkyDiameterFraction*3;
-
+        
   this.texCoordBuffer = new glx.Buffer(2, new Float32Array(
     [tcLeft,0, tcRight,0, tcRight,1, tcLeft,0, tcRight,1, tcLeft,1]));
-
+    
   v1 = [viewTrapezoid[0][0], viewTrapezoid[0][1], 1.0];
   v2 = [viewTrapezoid[1][0], viewTrapezoid[1][1], 1.0];
   v3 = [viewTrapezoid[2][0], viewTrapezoid[2][1], 1.0];
   v4 = [viewTrapezoid[3][0], viewTrapezoid[3][1], 1.0];
-
+  
   if (this.floorVertexBuffer)
     this.floorVertexBuffer.destroy();
-
+    
   this.floorVertexBuffer = new glx.Buffer(3, new Float32Array(
     [].concat( v1, v2, v3, v4)));
 };
@@ -6048,16 +6154,16 @@ render.SkyWall.prototype.render = function() {
 
   gl.drawArrays(gl.TRIANGLES, 0, this.vertexBuffer.numItems);
   shader.disable();
-
+  
 
   this.floorShader.enable();
   this.floorShader.setUniform('uColor', '4fv', fogColor.concat([1.0]));
   this.floorShader.setUniformMatrix('uMatrix', '4fv', render.viewProjMatrix.data);
   this.floorShader.bindBuffer(this.floorVertexBuffer, 'aPosition');
   gl.drawArrays(gl.TRIANGLE_FAN, 0, this.floorVertexBuffer.numItems);
-
+  
   this.floorShader.disable();
-
+  
 };
 
 render.SkyWall.prototype.destroy = function() {
@@ -6069,7 +6175,7 @@ render.SkyWall.prototype.destroy = function() {
 render.Buildings = {
 
   init: function() {
-
+  
     this.shader = !render.effects.shadows ?
       new glx.Shader({
         vertexShader: Shaders.buildings.vertex,
@@ -6114,7 +6220,7 @@ render.Buildings = {
           'uWallTexIndex'
         ]
     });
-
+    
     this.wallTexture = new glx.texture.Image();
     this.wallTexture.color( [1,1,1]);
     this.wallTexture.load( BUILDING_TEXTURE);
@@ -6150,7 +6256,7 @@ render.Buildings = {
     }
 
     shader.bindTexture('uWallTexIndex', 0, this.wallTexture);
-
+    
     if (depthFramebuffer) {
       shader.setUniform('uShadowTexDimensions', '2fv', [depthFramebuffer.width, depthFramebuffer.height]);
       shader.bindTexture('uShadowTexIndex', 1, depthFramebuffer.depthTexture);
@@ -6174,7 +6280,7 @@ render.Buildings = {
         ['uModelMatrix', '4fv', modelMatrix.data],
         ['uMatrix',      '4fv', glx.Matrix.multiply(modelMatrix, render.viewProjMatrix)]
       ]);
-
+      
       if (render.effects.shadows) {
         shader.setUniformMatrix('uSunMatrix', '4fv', glx.Matrix.multiply(modelMatrix, Sun.viewProjMatrix));
       }
@@ -6221,13 +6327,13 @@ render.MapShadows = {
         'uLowerEdgePoint',
         'uFogDistance',
         'uFogBlurDistance',
-        'uShadowTexDimensions',
+        'uShadowTexDimensions', 
         'uShadowStrength',
         'uShadowTexIndex',
         'uSunMatrix',
       ]
     });
-
+    
     this.mapPlane = new mesh.MapPlane();
   },
 
@@ -6312,14 +6418,14 @@ render.Basemap = {
       zoom = Math.round(MAP.zoom);
 
     shader.enable();
-
+    
     shader.setUniforms([
       ['uFogDistance',     '1f',  render.fogDistance],
       ['uFogBlurDistance', '1f',  render.fogBlurDistance],
       ['uViewDirOnMap',    '2fv', render.viewDirOnMap],
       ['uLowerEdgePoint',  '2fv', render.lowerLeftOnMap]
     ]);
-
+    
     for (var key in layer.visibleTiles) {
       tile = layer.tiles[key];
 
@@ -6353,7 +6459,7 @@ render.Basemap = {
   },
 
   renderTile: function(tile, shader) {
-    var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE *
+    var metersPerDegreeLongitude = METERS_PER_DEGREE_LATITUDE * 
                                    Math.cos(MAP.position.latitude / 180 * Math.PI);
 
     var modelMatrix = new glx.Matrix();
@@ -6361,9 +6467,9 @@ render.Basemap = {
                           -(tile.latitude - MAP.position.latitude) * METERS_PER_DEGREE_LATITUDE, 0);
 
     gl.enable(gl.POLYGON_OFFSET_FILL);
-    gl.polygonOffset(MAX_USED_ZOOM_LEVEL - tile.zoom,
+    gl.polygonOffset(MAX_USED_ZOOM_LEVEL - tile.zoom, 
                      MAX_USED_ZOOM_LEVEL - tile.zoom);
-
+                     
     shader.setUniforms([
       ['uViewDirOnMap', '2fv',   render.viewDirOnMap],
       ['uLowerEdgePoint', '2fv', render.lowerLeftOnMap]
@@ -6392,7 +6498,7 @@ render.Basemap = {
 render.HudRect = {
 
   init: function() {
-
+  
     var geometry = this.createGeometry();
     this.vertexBuffer   = new glx.Buffer(3, new Float32Array(geometry.vertices));
     this.texCoordBuffer = new glx.Buffer(2, new Float32Array(geometry.texCoords));
@@ -6411,7 +6517,7 @@ render.HudRect = {
     vertices.push(0, 0, 1E-5,
                   1, 0, 1E-5,
                   1, 1, 1E-5);
-
+    
     vertices.push(0, 0, 1E-5,
                   1, 1, 1E-5,
                   0, 1, 1E-5);
@@ -6431,7 +6537,7 @@ render.HudRect = {
     var shader = this.shader;
 
     shader.enable();
-
+    
     gl.uniformMatrix4fv(shader.uniforms.uMatrix, false, glx.Matrix.identity().data);
     this.vertexBuffer.enable();
 
@@ -6452,9 +6558,9 @@ render.HudRect = {
 };
 
 
-/* 'DepthFogNormalMap' renders the depth buffer and the scene's camera-space
-   normals and fog intensities into textures. Depth is stored as a 24bit depth
-   texture using the WEBGL_depth_texture extension, and normals and fog
+/* 'DepthFogNormalMap' renders the depth buffer and the scene's camera-space 
+   normals and fog intensities into textures. Depth is stored as a 24bit depth 
+   texture using the WEBGL_depth_texture extension, and normals and fog 
    intensities are stored as the 'rgb' and 'a' of a shared 32bit texture.
    Note that there is no dedicated shader to create the depth texture. Rather,
    the depth buffer used by the GPU in depth testing while rendering the normals
@@ -6469,7 +6575,7 @@ render.DepthFogNormalMap = function() {
     attributes: ['aPosition', 'aFilter', 'aNormal'],
     uniforms: ['uMatrix', 'uModelMatrix', 'uNormalMatrix', 'uTime', 'uFogDistance', 'uFogBlurDistance', 'uViewDirOnMap', 'uLowerEdgePoint']
   });
-
+  
   this.framebuffer = new glx.Framebuffer(128, 128, /*depthTexture=*/true); //dummy sizes, will be resized dynamically
 
   this.mapPlane = new mesh.MapPlane();
@@ -6496,20 +6602,20 @@ render.DepthFogNormalMap.prototype.render = function(viewMatrix, projMatrix, fra
     framebufferConfig = this.framebufferConfig;
 
 
-  if (framebuffer.width != framebufferConfig.width ||
+  if (framebuffer.width != framebufferConfig.width || 
       framebuffer.height!= framebufferConfig.height) {
     framebuffer.setSize( framebufferConfig.width, framebufferConfig.height );
 
     /* We will be sampling neighboring pixels of the depth texture to create an ambient
      * occlusion map. With the default texture wrap mode 'gl.REPEAT', sampling the neighbors
      * of edge texels would return texels on the opposite edge of the texture, which is not
-     * what we want. Setting the wrap mode to 'gl.CLAMP_TO_EDGE' instead returns
+     * what we want. Setting the wrap mode to 'gl.CLAMP_TO_EDGE' instead returns 
      * the texels themselves, which is far more useful for ambient occlusion maps */
     gl.bindTexture(gl.TEXTURE_2D, this.framebuffer.renderTexture.id);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
-
+    
   shader.enable();
   framebuffer.enable();
   gl.viewport(0, 0, framebufferConfig.usedWidth, framebufferConfig.usedHeight);
@@ -6548,7 +6654,7 @@ render.DepthFogNormalMap.prototype.render = function(viewMatrix, projMatrix, fra
       ['uModelMatrix',  '4fv', modelMatrix.data],
       ['uNormalMatrix', '3fv', glx.Matrix.transpose3(glx.Matrix.invert3(glx.Matrix.multiply(modelMatrix, viewMatrix)))]
     ]);
-
+    
     shader.bindBuffer(item.vertexBuffer, 'aPosition');
     shader.bindBuffer(item.normalBuffer, 'aNormal');
     shader.bindBuffer(item.filterBuffer, 'aFilter');
@@ -6565,7 +6671,6 @@ render.DepthFogNormalMap.prototype.render = function(viewMatrix, projMatrix, fra
 render.DepthFogNormalMap.prototype.destroy = function() {};
 
 
-
 render.AmbientMap = {
 
   init: function() {
@@ -6577,7 +6682,7 @@ render.AmbientMap = {
     });
 
     this.framebuffer = new glx.Framebuffer(128, 128); //dummy value, size will be set dynamically
-
+    
     this.vertexBuffer = new glx.Buffer(3, new Float32Array([
       -1, -1, 1E-5,
        1, -1, 1E-5,
@@ -6586,7 +6691,7 @@ render.AmbientMap = {
        1,  1, 1E-5,
       -1,  1, 1E-5
     ]));
-
+       
     this.texCoordBuffer = new glx.Buffer(2, new Float32Array([
       0,0,
       1,0,
@@ -6607,7 +6712,7 @@ render.AmbientMap = {
       effectStrength = 1.0;
     }
 
-    if (framebuffer.width != framebufferConfig.width ||
+    if (framebuffer.width != framebufferConfig.width || 
         framebuffer.height!= framebufferConfig.height)
     {
       framebuffer.setSize( framebufferConfig.width, framebufferConfig.height );
@@ -6619,8 +6724,8 @@ render.AmbientMap = {
     }
 
 
-    if (framebufferConfig.tcRight  != this.tcRight ||
-        framebufferConfig.tcTop    != this.tcTop   ||
+    if (framebufferConfig.tcRight  != this.tcRight || 
+        framebufferConfig.tcTop    != this.tcTop   || 
         framebufferConfig.tcLeft   != this.tcLeft  ||
         framebufferConfig.tcBottom != this.tcBottom )
     {
@@ -6632,8 +6737,8 @@ render.AmbientMap = {
          framebufferConfig.tcLeft,  framebufferConfig.tcTop,
          framebufferConfig.tcRight, framebufferConfig.tcBottom,
          framebufferConfig.tcLeft,  framebufferConfig.tcBottom
-        ]));
-
+        ]));      
+    
       this.tcRight = framebufferConfig.tcRight;
       this.tcBottom= framebufferConfig.tcBottom;
       this.tcLeft =  framebufferConfig.tcLeft;
@@ -6679,7 +6784,7 @@ render.AmbientMap = {
 render.Overlay = {
 
   init: function() {
-
+  
     var geometry = this.createGeometry();
     this.vertexBuffer   = new glx.Buffer(3, new Float32Array(geometry.vertices));
     this.texCoordBuffer = new glx.Buffer(2, new Float32Array(geometry.texCoords));
@@ -6699,7 +6804,7 @@ render.Overlay = {
     vertices.push(-1,-1, 1E-5,
                    1,-1, 1E-5,
                    1, 1, 1E-5);
-
+    
     vertices.push(-1,-1, 1E-5,
                    1, 1, 1E-5,
                   -1, 1, 1E-5);
@@ -6717,7 +6822,7 @@ render.Overlay = {
 
   render: function(texture, framebufferConfig) {
     var tcHorizMin, tcVertMin, tcHorizMax, tcVertMax;
-
+    
     if (framebufferConfig !== undefined)
     {
       tcHorizMin = 0                            / framebufferConfig.width;
@@ -6745,7 +6850,7 @@ render.Overlay = {
         tcHorizMin, tcVertMin,
         tcHorizMax, tcVertMax,
         tcHorizMin, tcVertMax]));
-
+      
       this.tcHorizMin = tcHorizMin;
       this.tcHorizMax = tcHorizMax;
       this.tcVertMin  = tcVertMin;
@@ -6757,8 +6862,8 @@ render.Overlay = {
     shader.enable();
     /* we are rendering an *overlay*, which is supposed to be rendered on top of the
      * scene no matter what its actual depth is. */
-    gl.disable(gl.DEPTH_TEST);
-
+    gl.disable(gl.DEPTH_TEST);    
+    
     shader.setUniformMatrix('uMatrix', '4fv', glx.Matrix.identity().data);
 
     shader.bindBuffer(this.vertexBuffer,  'aPosition');
@@ -6787,7 +6892,7 @@ render.Blur = {
     });
 
     this.framebuffer = new glx.Framebuffer(128, 128); //dummy value, size will be set dynamically
-
+    
     this.vertexBuffer = new glx.Buffer(3, new Float32Array([
       -1, -1, 1E-5,
        1, -1, 1E-5,
@@ -6796,7 +6901,7 @@ render.Blur = {
        1,  1, 1E-5,
       -1,  1, 1E-5
     ]));
-
+       
     this.texCoordBuffer = new glx.Buffer(2, new Float32Array([
       0,0,
       1,0,
@@ -6814,7 +6919,7 @@ render.Blur = {
       framebuffer = this.framebuffer;
 
 
-    if (framebuffer.width != framebufferConfig.width ||
+    if (framebuffer.width != framebufferConfig.width || 
         framebuffer.height!= framebufferConfig.height)
     {
       framebuffer.setSize( framebufferConfig.width, framebufferConfig.height );
@@ -6826,8 +6931,8 @@ render.Blur = {
     }
 
 
-    if (framebufferConfig.tcRight  != this.tcRight ||
-        framebufferConfig.tcTop    != this.tcTop   ||
+    if (framebufferConfig.tcRight  != this.tcRight || 
+        framebufferConfig.tcTop    != this.tcTop   || 
         framebufferConfig.tcLeft   != this.tcLeft  ||
         framebufferConfig.tcBottom != this.tcBottom )
     {
@@ -6839,8 +6944,8 @@ render.Blur = {
          framebufferConfig.tcLeft,  framebufferConfig.tcTop,
          framebufferConfig.tcRight, framebufferConfig.tcBottom,
          framebufferConfig.tcLeft,  framebufferConfig.tcBottom
-        ]));
-
+        ]));      
+    
       this.tcRight = framebufferConfig.tcRight;
       this.tcBottom= framebufferConfig.tcBottom;
       this.tcLeft =  framebufferConfig.tcLeft;
@@ -6892,7 +6997,7 @@ basemap.Tile = function(x, y, zoom) {
   // note: due to the Mercator projection the tile width in meters is equal
   //       to the tile height in meters.
   var size = getTileSizeInMeters( this.latitude, zoom);
-
+  
   var vertices = [
     size, size, 0,
     size,    0, 0,
