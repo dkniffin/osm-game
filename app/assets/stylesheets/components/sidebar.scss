@@ -2,7 +2,7 @@
   position: absolute;
   right: 0px;
   width: 300px;
-  top: 40px;
+  top: 35px;
   bottom: 0px;
   z-index: 15;
   border-left: 1px solid gray;
@@ -10,7 +10,10 @@
   // padding: 10px;
 
   .sidebar__character {
-    margin: 10px;
+    margin: 0px;
+    padding: 10px;
+    overflow-y: scroll;
+    height: calc(100% - 220px);
   }
 
   .key {
