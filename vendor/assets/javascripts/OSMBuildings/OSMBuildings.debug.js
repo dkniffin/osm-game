@@ -158,6 +158,18 @@ Basemap.prototype = {
     return !!this.pointer.disabled;
   },
 
+  getCameraBounds: function() {
+    var c = this.container.getBoundingClientRect(),
+        osmb = this.layers.items[0]; // TODO: This assumes that the OSMB layer is the first one
+
+    return [
+      osmb.unproject(c.left, c.top),
+      osmb.unproject(c.right, c.top),
+      osmb.unproject(c.right, c.bottom),
+      osmb.unproject(c.left, c.bottom)
+    ];
+  },
+
   getBounds: function() {
     //FIXME: update method; the old code did only work for straight top-down
     //       views, not for other cameras.
@@ -178,18 +190,6 @@ Basemap.prototype = {
       e: se.longitude
     };*/
     return null;
-  },
-
-  getCameraBounds: function() {
-    var c = this.container.getBoundingClientRect(),
-        osmb = this.layers.items[0]; // TODO: This assumes that the OSMB layer is the first one
-
-    return [
-      osmb.unproject(c.left, c.top),
-      osmb.unproject(c.right, c.top),
-      osmb.unproject(c.right, c.bottom),
-      osmb.unproject(c.left, c.bottom)
-    ];
   },
 
   setZoom: function(zoom, e) {
@@ -233,6 +233,7 @@ Basemap.prototype = {
     }
     this.position = { latitude:clamp(lat, -90, 90), longitude:clamp(lon, -180, 180) };
     this.emit('change');
+    this.emit('move', this.position)
     return this;
   },
 
@@ -524,7 +525,6 @@ Pointer.prototype = {
       latitude:  this.map.position.latitude  + dir[1] * scale };
 
     this.map.setPosition(new_position);
-    this.map.emit('move', new_position);
   },
 
   rotateMap: function(e) {
