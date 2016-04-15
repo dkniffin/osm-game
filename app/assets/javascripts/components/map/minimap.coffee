@@ -1,6 +1,4 @@
 $ ->
-  L.mapbox.accessToken = 'pk.eyJ1Ijoib2RkaXR5b3ZlcnNlZXIxMyIsImEiOiIwTEp5a1JnIn0.kzeYyqB2YOj2XXXECKKnJg'
-
   App.minimap = L.map('minimap',
     zoomControl: false
     attributionControl: false
@@ -11,10 +9,7 @@ $ ->
     zoom: 13)
   console.log(App.minimap)
 
-  L.mapbox.styleLayer('mapbox://styles/oddityoverseer13/ciju0qw2900073slwb1yxdi25',
-    minZoom: 5,
-    maxZoom: 20
-  ).addTo(App.minimap)
+  L.mapbox.styleLayer(App.mapbox_style_url, minZoom: 5, maxZoom: 20).addTo(App.minimap)
 
 
   bound_box = L.polygon([]).addTo(App.minimap)

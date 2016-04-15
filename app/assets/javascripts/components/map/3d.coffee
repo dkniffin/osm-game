@@ -19,8 +19,9 @@ $ ->
 
     App.osmb.addTo(App.map)
 
+    tile_url = L.mapbox.styleLayer(App.mapbox_style_url).options.tiles.replace('http', 'https')
     App.osmb.addMapTiles(
-      'https://{s}.tiles.mapbox.com/v3/osmbuildings.kbpalbpk/{z}/{x}/{y}.png',
+      tile_url,
       {
         attribution: '© Data <a href="https://openstreetmap.org/copyright/">OpenStreetMap</a> · © Map <a href="http://mapbox.com">MapBox</a>'
       }
