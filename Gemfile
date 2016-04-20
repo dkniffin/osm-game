@@ -19,6 +19,10 @@ gem 'pickup'
 # OSM Related things
 gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
 
+source 'https://rails-assets.org' do
+  gem 'rails-assets-osmbuildings-gl'
+end
+
 group :development, :test do
   gem 'pry-byebug'
   gem 'rspec-rails', '~> 3.5.0.beta1'
