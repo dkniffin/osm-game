@@ -1,11 +1,12 @@
 class CharacterTicker < ActiveInteraction::Base
   interface :subject,
-            methods: %i(action_details current_action move_towards lon lat attack_range latlng)
+            methods: %i(action_details current_action move_towards lon lat attack_range latlng
+                        food)
   integer :tick_count
 
   def execute
     handle_current_action
-    # handle_hunger
+    handle_hunger
     # handle_thirst
 
     if character.changed?
@@ -14,6 +15,10 @@ class CharacterTicker < ActiveInteraction::Base
   end
 
   private
+
+  def character
+    subject
+  end
 
   def handle_current_action
     target_lat = character.action_details.try(:[], 'target_lat')
@@ -41,7 +46,14 @@ class CharacterTicker < ActiveInteraction::Base
     end
   end
 
-  def character
-    subject
+  def handle_hunger
+    # Every hunger_speed ticks
+    if tick_count % character.hunger_speed == 0
+      character.food -= 1
+      character.food = 0 if character.food < 0
+      if character.food == 0
+        character.health -= 5
+      end
+    end
   end
 end
