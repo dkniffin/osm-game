@@ -12,16 +12,6 @@ class Zombie < ActiveRecord::Base
     1.0 * 60
   end
 
-  def tick(tick_count)
-    char = Character.closest_to(lon, lat)
-    if latlng.distance(char.latlng) / 1000 <= attack_range
-      attack(char, tick_count)
-    elsif latlng.distance(char.latlng) / 1000 <= AGGRO_DISTANCE
-      move_towards([char.lat, char.lon])
-    end
-    delete_if_dead
-  end
-
   def attack_speed
     ATTACK_SPEED
   end
@@ -32,6 +22,10 @@ class Zombie < ActiveRecord::Base
 
   def attack_damage
     ATTACK_DAMAGE
+  end
+
+  def aggro_distance
+    AGGRO_DISTANCE
   end
 
   private
