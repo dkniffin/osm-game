@@ -14,8 +14,7 @@ class Ticker
     every_tick do
       tick_count += 1
       tick_model(Character, CharacterTicker, tick_count)
-      # ZombieSpawner.run
-      # tick_model(Zombie, tick_count)
+      tick_model(Zombie, ZombieTicker, tick_count)
     end
   end
 
