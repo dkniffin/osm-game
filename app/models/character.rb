@@ -12,30 +12,6 @@ class Character < ActiveRecord::Base
 
   reverse_geocoded_by :lat, :lon
 
-  def tick(tick_count)
-    case current_action
-    when 'move'
-      move_towards([action_details['target_lat'], action_details['target_lon']]) do
-        self.current_action = nil
-        self.action_details = nil
-      end
-    when 'search'
-      move_towards([action_details['target_lat'], action_details['target_lon']]) do
-        Search.run(character: self)
-        self.current_action = nil
-        self.action_details = nil
-      end
-    else
-      # Default action: attack the closest zombie, if they're in range
-      zombie = Zombie.closest_to(lon, lat)
-      if zombie.present?
-        if latlng.distance(zombie.latlng) / 1000 <= ATTACK_RANGE
-          attack(zombie, tick_count)
-        end
-      end
-    end
-  end
-
   def search(lat, lon)
     update(current_action: :search, action_details: { target_lat: lat, target_lon: lon })
   end
