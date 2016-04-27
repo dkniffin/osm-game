@@ -3,7 +3,7 @@ class Search < ActiveInteraction::Base
 
   def execute
     # get character's location
-    location = OSM::Way.containing_point(character.latlng).first
+    location = OSM::Way.containing_point(character.latlng).with_type.first
 
     # If there's no location, return
     return if location.nil?
@@ -36,6 +36,8 @@ class Search < ActiveInteraction::Base
       { weapon: 1 }
     when :house
       { weapon: 1, medical: 2, food: 5 }
+    when :gas_station
+      { weapon: 1, medical: 5, food: 10 }
     end
   end
 end
