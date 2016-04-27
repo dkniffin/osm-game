@@ -17,10 +17,12 @@ class Character < ActiveRecord::Base
   end
 
   def use_item(item)
-    item = item.class == Integer ? items.find(item) : item
-    if item.category == 'medical'
-      restore_health(30)
-    end
+    item = item.class == Fixnum ? items.find(item) : item
+
+    restore_health(item.stats.try(:[],'health_recovered').to_i)
+    restore_food(item.stats.try(:[],'food_recovered').to_i)
+    restore_water(item.stats.try(:[],'water_recovered').to_i)
+
     items.delete(item)
     item.destroy
   end
