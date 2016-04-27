@@ -137,8 +137,8 @@ describe CharacterTicker, type: :service do
 
   describe 'hunger and thirst' do
     let(:character_params) { { food: 100, water: 100 } }
-    context 'every 50 ticks' do
-      let(:tick_count) { 50 }
+    context 'every hunger_speed ticks' do
+      let(:tick_count) { character.hunger_speed }
 
       it 'decrements food' do
         expect { subject }.to change { character.food }.by(-1)
@@ -148,6 +148,25 @@ describe CharacterTicker, type: :service do
         let(:character_params) { { food: 0 } }
         it "doesn't drop below zero" do
           expect { subject }.to_not change { character.food }
+        end
+
+        it 'decrements health by 5' do
+          expect { subject }.to change { character.health }.by(-5)
+        end
+      end
+    end
+
+    context 'every thirst_speed ticks' do
+      let(:tick_count) { character.thirst_speed }
+
+      it 'decrements water' do
+        expect { subject }.to change { character.water }.by(-1)
+      end
+
+      context "if the character's water is at 0" do
+        let(:character_params) { { water: 0 } }
+        it "doesn't drop below zero" do
+          expect { subject }.to_not change { character.water }
         end
 
         it 'decrements health by 5' do

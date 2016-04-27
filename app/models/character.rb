@@ -76,7 +76,11 @@ class Character < ActiveRecord::Base
   end
 
   def hunger_speed
-    50
+    500
+  end
+
+  def thirst_speed
+    300
   end
 
   def attack_damage
