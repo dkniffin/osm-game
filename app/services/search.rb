@@ -1,6 +1,8 @@
 class Search < ActiveInteraction::Base
   interface :character, methods: %i(items latlng search_level)
 
+  STATS = YAML.load(File.read(Rails.root.join('app', 'data', 'location_resources.yml'))).freeze
+
   def execute
     # get character's location
     location = OSM::Way.containing_point(character.latlng).with_type.first
@@ -23,21 +25,6 @@ class Search < ActiveInteraction::Base
   end
 
   def resource_stats(location)
-    case location.location_type
-    when :medical
-      { medical: 4, food: 1 }
-    when :police
-      { weapon: 5, medical: 1, food: 1 }
-    when :weapon_shop
-      { weapon: 5 }
-    when :sporting_goods
-      { weapon: 2, medical: 2, food: 1 }
-    when :pawnbroker
-      { weapon: 1 }
-    when :house
-      { weapon: 1, medical: 2, food: 5 }
-    when :gas_station
-      { weapon: 1, medical: 5, food: 10 }
-    end
+    STATS[location.location_type]
   end
 end
