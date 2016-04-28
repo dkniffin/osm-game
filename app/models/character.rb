@@ -64,15 +64,15 @@ class Character < ActiveRecord::Base
   end
 
   def attack_speed
-    Settings.character.attack.speed
+    Settings['character']['attack']['speed']
   end
 
   def attack_range
-    Settings.character.attack.range
+    Settings['character']['attack']['range']
   end
 
   def attack_damage
-    default_damage = Settings.character.attack.damage_without_weapon
+    default_damage = Settings['character']['attack']['damage_without_weapon']
     current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || default_damage
   end
 
@@ -89,7 +89,7 @@ class Character < ActiveRecord::Base
   end
 
   def search_level
-    self[:search_level] || Settings.character.search.default_level
+    self[:search_level] || Settings['character']['search']['default_level']
   end
 
   private

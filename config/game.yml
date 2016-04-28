@@ -1,9 +1,3 @@
-hunger:
-  speed: 500 # units: ticks (Larger is slower)
-  damage: 5
-thirst:
-  speed: 300 # units: ticks (Larger is slower)
-  damage: 5
 zombie:
   aggro:
     distance: 0.1 # units: km
@@ -20,3 +14,9 @@ character:
     damage_without_weapon: 8
   search:
     default_level: 1
+  hunger:
+    speed: 500 # units: ticks (Larger is slower)
+    damage: 5
+  thirst:
+    speed: 300 # units: ticks (Larger is slower)
+    damage: 5

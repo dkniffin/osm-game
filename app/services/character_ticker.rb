@@ -47,19 +47,19 @@ class CharacterTicker < ActiveInteraction::Base
   end
 
   def handle_hunger
-    if tick_count % Settings.hunger.speed == 0
+    if tick_count % Settings['character']['hunger']['speed'] == 0
       character.lose_food(1)
       if character.food == 0
-        character.take_damage(Settings.hunger.damage)
+        character.take_damage(Settings['character']['hunger']['damage'])
       end
     end
   end
 
   def handle_thirst
-    if tick_count % Settings.thirst.speed == 0
+    if tick_count % Settings['character']['thirst']['speed'] == 0
       character.lose_water(1)
       if character.water == 0
-        character.take_damage(Settings.thirst.damage)
+        character.take_damage(Settings['character']['thirst']['damage'])
       end
     end
   end
