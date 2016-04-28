@@ -1,0 +1,22 @@
+zombie:
+  aggro:
+    distance: 0.1 # units: km
+  attack:
+    range: 0.01 # units: km
+    damage: 5
+    speed: 10
+  movement:
+    speed: 60 # units: meters/second
+character:
+  attack:
+    range: 0.01 # units: km
+    speed: 15
+    damage_without_weapon: 8
+  search:
+    default_level: 1
+  hunger:
+    speed: 500 # units: ticks (Larger is slower)
+    damage: 5
+  thirst:
+    speed: 300 # units: ticks (Larger is slower)
+    damage: 5

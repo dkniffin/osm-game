@@ -2,28 +2,49 @@ medical:
   - name: "Medkit"
     spawn_chance: 1
     stats:
-      heal_value: 30
+      health_recovered: 30
   - name: "Bandage"
     spawn_chance: 50
     stats:
-      heal_value: 5
+      health_recovered: 5
   - name: "Antibiotics"
     spawn_chance: 20
     stats:
-      heal_value: 10
+      health_recovered: 10
+  - name: "Pills"
+    spawn_chance: 30
+    stats:
+      health_recovered: 5
 food:
   - name: "Can of beans"
     spawn_chance: 10
+    stats:
+      food_recovered: 7
+      water_recovered: 3
   - name: "Granola bar"
     spawn_chance: 5
+    stats:
+      food_recovered: 5
   - name: "Beef jerky"
     spawn_chance: 5
+    stats:
+      food_recovered: 5
   - name: "Chips"
     spawn_chance: 10
+    stats:
+      food_recovered: 3
   - name: "Candy"
     spawn_chance: 10
+    stats:
+      food_recovered: 1
   - name: "Bottle of water"
     spawn_chance: 20
+    stats:
+      water_recovered: 10
+  - name: "Can of soda"
+    spawn_chance: 15
+    stats:
+      water_recovered: 3
 weapon:
   - name: "Baseball bat"
     spawn_chance: 20

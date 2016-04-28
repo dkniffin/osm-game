@@ -29,7 +29,7 @@ class window.Character
       @marker.on('click', @select.bind(this))
       @marker.addTo(App.leaflet_map)
 
-    @marker.addTo(App.minimap)
+    # @marker.addTo(App.minimap)
 
   update: (data) ->
     @data = data

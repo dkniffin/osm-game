@@ -13,9 +13,8 @@ class Ticker
     tick_count = 0
     every_tick do
       tick_count += 1
-      tick_model(Character, tick_count)
-      # ZombieSpawner.run
-      tick_model(Zombie, tick_count)
+      tick_model(Character, CharacterTicker, tick_count)
+      tick_model(Zombie, ZombieTicker, tick_count)
     end
   end
 
@@ -32,9 +31,9 @@ class Ticker
     end
   end
 
-  def tick_model(model, tick_count)
+  def tick_model(model, ticker, tick_count)
     model.all.each do |obj|
-      obj.tick(tick_count)
+      ticker.run!(subject: obj, tick_count: tick_count)
       if obj.changed?
         obj.save
       end

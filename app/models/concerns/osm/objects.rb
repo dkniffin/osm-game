@@ -43,6 +43,11 @@ module OSM
         }
       end
 
+      scope :with_type, -> {
+        types = TYPES.keys - [:building]
+        types.map { |t| send(t) }.reduce(:+)
+      }
+
       def location_type
         TYPES.select do |_type, definition|
           filter = definition.delete(:not) || {}

@@ -4,47 +4,21 @@ class Character < ActiveRecord::Base
   validates :name, presence: true
   has_many :items
 
-  ATTACK_RANGE = 0.01 # km
-  ATTACK_SPEED = 15
-  ATTACK_DAMAGE_WITHOUT_WEAPON = 8
-
   include Geographic::Point
 
   reverse_geocoded_by :lat, :lon
-
-  def tick(tick_count)
-    case current_action
-    when 'move'
-      move_towards([action_details['target_lat'], action_details['target_lon']]) do
-        self.current_action = nil
-        self.action_details = nil
-      end
-    when 'search'
-      move_towards([action_details['target_lat'], action_details['target_lon']]) do
-        Search.run(character: self)
-        self.current_action = nil
-        self.action_details = nil
-      end
-    else
-      # Default action: attack the closest zombie, if they're in range
-      zombie = Zombie.closest_to(lon, lat)
-      if zombie.present?
-        if latlng.distance(zombie.latlng) / 1000 <= ATTACK_RANGE
-          attack(zombie, tick_count)
-        end
-      end
-    end
-  end
 
   def search(lat, lon)
     update(current_action: :search, action_details: { target_lat: lat, target_lon: lon })
   end
 
   def use_item(item)
-    item = item.class == Integer ? items.find(item) : item
-    if item.category == 'medical'
-      restore_health(30)
-    end
+    item = item.class == Fixnum ? items.find(item) : item
+
+    restore_health(item.stats.try(:[],'health_recovered').to_i)
+    restore_food(item.stats.try(:[],'food_recovered').to_i)
+    restore_water(item.stats.try(:[],'water_recovered').to_i)
+
     items.delete(item)
     item.destroy
   end
@@ -90,15 +64,16 @@ class Character < ActiveRecord::Base
   end
 
   def attack_speed
-    ATTACK_SPEED
+    Settings['character']['attack']['speed']
   end
 
   def attack_range
-    ATTACK_RANGE
+    Settings['character']['attack']['range']
   end
 
   def attack_damage
-    current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || ATTACK_DAMAGE_WITHOUT_WEAPON
+    default_damage = Settings['character']['attack']['damage_without_weapon']
+    current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || default_damage
   end
 
   def current_weapon
@@ -114,7 +89,7 @@ class Character < ActiveRecord::Base
   end
 
   def search_level
-    self[:search_level] || 1
+    self[:search_level] || Settings['character']['search']['default_level']
   end
 
   private

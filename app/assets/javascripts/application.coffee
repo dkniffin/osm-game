@@ -14,7 +14,7 @@
 #= require components/map_mode
 #= require components/map/2d
 #= require components/map/3d
-#= require components/map/minimap
+# require components/map/minimap
 #= require components/buttons
 #= require components/sidebar
 

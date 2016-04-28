@@ -47,8 +47,6 @@ module Game
         end
       end
 
-      private
-
       # Take a single step towards the target. When we arrive, yield
       def move_towards(target)
         target = target.map(&:to_f)
@@ -68,6 +66,8 @@ module Game
           yield
         end
       end
+
+      private
 
       def colides_with_building?(target_lat, target_lon)
         target = RGeo::Geographic.spherical_factory(srid: 4326).point(target_lon, target_lat)
