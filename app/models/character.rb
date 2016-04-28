@@ -3,6 +3,7 @@ class Character < ActiveRecord::Base
   include Game::FEUpdater
   validates :name, presence: true
   has_many :items
+  belongs_to :user
 
   include Geographic::Point
 
@@ -15,9 +16,9 @@ class Character < ActiveRecord::Base
   def use_item(item)
     item = item.class == Fixnum ? items.find(item) : item
 
-    restore_health(item.stats.try(:[],'health_recovered').to_i)
-    restore_food(item.stats.try(:[],'food_recovered').to_i)
-    restore_water(item.stats.try(:[],'water_recovered').to_i)
+    restore_health(item.stats.try(:[], 'health_recovered').to_i)
+    restore_food(item.stats.try(:[], 'food_recovered').to_i)
+    restore_water(item.stats.try(:[], 'water_recovered').to_i)
 
     items.delete(item)
     item.destroy
@@ -92,9 +93,13 @@ class Character < ActiveRecord::Base
     self[:search_level] || Settings['character']['search']['default_level']
   end
 
+  def icon_url
+    user.try(:image_url) || ''
+  end
+
   private
 
   def include_in_to_json
-    [:lat, :lon, :inventory, :equipped_items]
+    [:lat, :lon, :inventory, :equipped_items, :icon_url]
   end
 end

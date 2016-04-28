@@ -20,7 +20,7 @@ class window.Character
 
   constructor: (@data) ->
     @marker = L.marker([@data['lat'], @data['lon']],
-      {icon: @_characterIcon(@data['health']), opacity: DESELECTED_OPACITY})
+      {icon: @_characterIcon(@data['icon_url'], @data['health']), opacity: DESELECTED_OPACITY})
     if App.map_mode == '3d'
       @model = App.osmb.addOBJ(App.models.character,
       { latitude: @data['lat'], longitude: @data['lon'] },
@@ -37,7 +37,7 @@ class window.Character
     if App.map_mode == '3d'
       @model.position = {latitude: data['lat'], longitude: data['lon']}
     else
-      @marker.setIcon(@_characterIcon(data.health))
+      @marker.setIcon(@_characterIcon(data.icon_url, data.health))
 
     @marker.setLatLng([data['lat'], data['lon']])
 
@@ -76,12 +76,12 @@ class window.Character
     sidebar = $('.sidebar .sidebar__character')
     sidebar.hide()
 
-  _characterIcon: (health) ->
+  _characterIcon: (iconUrl, health) ->
     L.divIcon({
       className: 'character-icon'
       iconSize:     [48, 48]
       iconAnchor:   [12, 12]
-      html: "#{@_healthBarHTML(health)}"
+      html: "#{@_characterIconHTML(iconUrl, health)}"
     })
 
   _inventoryHTML: (items) ->
@@ -98,5 +98,5 @@ class window.Character
       unequip_link = "<a class='item-action unequip-item' data-item-id='#{item['id']}'>Unequip</a>"
       "<li>#{item['name']} #{unequip_link}</li>"
 
-  _healthBarHTML: (health) ->
-    "<progress value=#{health} max=100 />"
+  _characterIconHTML: (iconUrl, health) ->
+    "<img src=#{iconUrl}><progress value=#{health} max=100 />"

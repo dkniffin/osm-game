@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160428124115) do
+ActiveRecord::Schema.define(version: 20160428202421) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -20,7 +20,6 @@ ActiveRecord::Schema.define(version: 20160428124115) do
 
   create_table "characters", force: :cascade do |t|
     t.string   "name"
-    t.boolean  "player"
     t.datetime "created_at",                                                         null: false
     t.datetime "updated_at",                                                         null: false
     t.string   "current_action"
@@ -30,6 +29,8 @@ ActiveRecord::Schema.define(version: 20160428124115) do
     t.integer  "food",                                                 default: 100
     t.geometry "latlng",         limit: {:srid=>0, :type=>"geometry"}
     t.integer  "search_level"
+    t.integer  "user_id"
+    t.index ["user_id"], name: "index_characters_on_user_id", using: :btree
   end
 
   create_table "items", force: :cascade do |t|
@@ -376,6 +377,8 @@ ActiveRecord::Schema.define(version: 20160428124115) do
     t.datetime "updated_at",                          null: false
     t.string   "provider"
     t.string   "uid"
+    t.string   "image_url"
+    t.string   "name"
     t.index ["email"], name: "index_users_on_email", unique: true, using: :btree
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true, using: :btree
   end
@@ -389,4 +392,5 @@ ActiveRecord::Schema.define(version: 20160428124115) do
     t.hstore   "action_details"
   end
 
+  add_foreign_key "characters", "users"
 end
