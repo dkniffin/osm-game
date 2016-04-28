@@ -99,4 +99,7 @@ class window.Character
       "<li>#{item['name']} #{unequip_link}</li>"
 
   _characterIconHTML: (iconUrl, health) ->
-    "<img src=#{iconUrl}><progress value=#{health} max=100 />"
+    "<div class=progress-bar-outside>" +
+      "<div class=progress-bar-inside style='width: #{health}%;'></div>" +
+    "</div>" +
+    "<img src=#{iconUrl}>"
