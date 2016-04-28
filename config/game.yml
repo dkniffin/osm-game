@@ -1,0 +1,6 @@
+hunger:
+  speed: 500 # Larger is slower
+  damage: 5
+thirst:
+  speed: 300 # Larger is slower
+  damage: 5

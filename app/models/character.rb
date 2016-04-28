@@ -75,14 +75,6 @@ class Character < ActiveRecord::Base
     ATTACK_RANGE
   end
 
-  def hunger_speed
-    500
-  end
-
-  def thirst_speed
-    300
-  end
-
   def attack_damage
     current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || ATTACK_DAMAGE_WITHOUT_WEAPON
   end
