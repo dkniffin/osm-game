@@ -161,11 +161,15 @@ describe Character, type: :model do
     end
 
     context 'when the item is a medical item' do
-      let!(:item) { create(:item, character: subject, category: 'medical') }
+      let!(:item) do
+        create(:item, character: subject, category: 'medical', stats: { health_recovered: 10 })
+      end
+
       before { subject.update(health: 70) }
 
       it 'restores the approprate amount of health' do
-        expect { subject.use_item(item) }.to change { subject.health }.from(70).to(100)
+        expect { subject.use_item(item) }
+          .to change { subject.health }.from(70).to(80)
       end
     end
   end
