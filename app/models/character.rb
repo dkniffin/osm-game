@@ -4,10 +4,6 @@ class Character < ActiveRecord::Base
   validates :name, presence: true
   has_many :items
 
-  ATTACK_RANGE = 0.01 # km
-  ATTACK_SPEED = 15
-  ATTACK_DAMAGE_WITHOUT_WEAPON = 8
-
   include Geographic::Point
 
   reverse_geocoded_by :lat, :lon
@@ -68,15 +64,16 @@ class Character < ActiveRecord::Base
   end
 
   def attack_speed
-    ATTACK_SPEED
+    Settings.character.attack.speed
   end
 
   def attack_range
-    ATTACK_RANGE
+    Settings.character.attack.range
   end
 
   def attack_damage
-    current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || ATTACK_DAMAGE_WITHOUT_WEAPON
+    default_damage = Settings.character.attack.damage_without_weapon
+    current_weapon.try(:stats).try(:[], 'damage').try(:to_i) || default_damage
   end
 
   def current_weapon
@@ -92,7 +89,7 @@ class Character < ActiveRecord::Base
   end
 
   def search_level
-    self[:search_level] || 1
+    self[:search_level] || Settings.character.search.default_level
   end
 
   private
