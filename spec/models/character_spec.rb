@@ -149,6 +149,43 @@ describe Character, type: :model do
     end
   end
 
+  describe '#dead?' do
+    context 'when health is below 0' do
+      before { subject.update(health: 0) }
+
+      it 'returns true' do
+        expect(subject.dead?).to eq(true)
+      end
+    end
+
+    context 'when health is above 0' do
+      it 'returns false' do
+        expect(subject.dead?).to eq(false)
+      end
+    end
+  end
+
+  describe '#respawn' do
+    before { subject.respawn }
+
+    it 'puts the character at the respawn location' do
+      expect(subject.lat).to eq(Settings['character']['spawn']['lat'])
+      expect(subject.lng).to eq(Settings['character']['spawn']['lon'])
+    end
+
+    it "resets the character's health" do
+      expect(subject.health).to eq(100)
+    end
+
+    it "resets the character's food" do
+      expect(subject.food).to eq(100)
+    end
+
+    it "resets the character's water" do
+      expect(subject.water).to eq(100)
+    end
+  end
+
   describe '#use_item' do
     let!(:item) { create(:item, character: subject) }
 

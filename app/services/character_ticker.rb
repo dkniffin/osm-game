@@ -8,6 +8,7 @@ class CharacterTicker < ActiveInteraction::Base
     handle_current_action
     handle_hunger
     handle_thirst
+    handle_life
     if tick_count % Settings['zombie']['spawn']['interval'] == 0
       ZombieSpawner.run!(character: character)
     end
@@ -18,6 +19,10 @@ class CharacterTicker < ActiveInteraction::Base
   end
 
   private
+
+  def handle_life
+    character.respawn if character.dead?
+  end
 
   def character
     subject
