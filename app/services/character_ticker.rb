@@ -8,6 +8,7 @@ class CharacterTicker < ActiveInteraction::Base
     handle_current_action
     handle_hunger
     handle_thirst
+    handle_life
 
     if character.changed?
       character.save
@@ -15,6 +16,10 @@ class CharacterTicker < ActiveInteraction::Base
   end
 
   private
+
+  def handle_life
+    character.respawn if character.dead?
+  end
 
   def character
     subject

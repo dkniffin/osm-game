@@ -46,6 +46,18 @@ class Character < ActiveRecord::Base
     update(food: new_food)
   end
 
+  def dead?
+    health <= 0 ? true : false
+  end
+
+  def respawn
+    update(lat: Settings['character']['spawn']['lat'],
+           lng: Settings['character']['spawn']['lon'],
+           food: 100,
+           water: 100,
+           health: 100)
+  end
+
   def lose_food(damage)
     new_food = self.food -= damage
     new_food = 0 if new_food < 0
