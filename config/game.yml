@@ -8,6 +8,9 @@ zombie:
   movement:
     speed: 60 # units: meters/second
 character:
+  spawn:
+    lat: 35.991591
+    lon: -78.903991
   attack:
     range: 0.01 # units: km
     speed: 15
