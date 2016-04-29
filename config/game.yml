@@ -1,4 +1,7 @@
 zombie:
+  spawn:
+    interval: 20 # ticks
+    chance: 50 # Percent
   aggro:
     distance: 0.1 # units: km
   attack:

@@ -27,6 +27,9 @@ module OSM
       house: {
         building: %w(house)
       },
+      cemetery: {
+        landuse: %w(cemetery)
+      },
       building: {
         not: {
           building: ['no', nil]
