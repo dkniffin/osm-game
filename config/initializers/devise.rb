@@ -239,7 +239,7 @@ Devise.setup do |config|
   config.omniauth :facebook,
                   Rails.application.secrets.facebook['app_id'],
                   Rails.application.secrets.facebook['app_secret'],
-                  scope: 'user_location, user_education_history, user_work_history',
+                  scope: 'email, user_location, user_education_history, user_work_history',
                   info_fields: 'name, email, location, work, education',
                   image_size: 'large'
 
