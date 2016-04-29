@@ -1,0 +1,46 @@
+medical:
+  zombie_spawn_chance: 10
+  resources:
+    medical: 4
+    food: 1
+police:
+  zombie_spawn_chance: 1
+  resources:
+    weapon: 5
+    medical: 1
+    food: 1
+weapon_shop:
+  zombie_spawn_chance: 1
+  resources:
+    weapon: 5
+sporting_goods:
+  zombie_spawn_chance: 1
+  resources:
+    weapon: 2
+    medical: 2
+    food: 1
+pawnbroker:
+  zombie_spawn_chance: 1
+  resources:
+    weapon: 1
+house:
+  zombie_spawn_chance: 5
+  resources:
+    weapon: 1
+    medical: 2
+    food: 5
+gas_station:
+  zombie_spawn_chance: 1
+  resources:
+    weapon: 1
+    medical: 5
+    food: 10
+office:
+  zombie_spawn_chance: 7
+  resources:
+    food: 1
+    medical: 1
+cemetery:
+  zombie_spawn_chance: 20
+  resources:
+    weapon: 1
