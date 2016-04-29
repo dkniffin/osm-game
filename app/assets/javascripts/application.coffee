@@ -1,6 +1,7 @@
 #= require jquery
 #= require jquery_ujs
 #= require mapbox.js
+#= require js-cookie
 #= require OSMBuildings/OSMBuildings.js
 
 #= require helpers/models

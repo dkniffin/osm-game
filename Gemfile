@@ -10,6 +10,7 @@ gem 'jbuilder', '~> 2.0'
 gem 'puma'
 gem 'sass'
 gem 'devise', github: 'plataformatec/devise'
+gem 'omniauth-facebook'
 gem 'alchemist'
 gem 'geocoder'
 gem 'slim-rails'
@@ -21,6 +22,7 @@ gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
 
 source 'https://rails-assets.org' do
   gem 'rails-assets-osmbuildings-gl'
+  gem 'rails-assets-js-cookie'
 end
 
 group :development, :test do

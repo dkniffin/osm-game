@@ -6,6 +6,5 @@ FactoryGirl.define do
       lon = rand(-180.0..180.0)
       RGeo::Geographic.spherical_factory(srid: 4326).point(lon, lat)
     end
-    player { [true,false].sample }
   end
 end

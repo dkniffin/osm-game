@@ -7,18 +7,15 @@ body {
   position: absolute;
   top: 35px;
   bottom: 0;
-  width: 100%;
+  width: calc(100% - 300px);
   z-index: 10;
 
   .character-icon {
-    background-size: 24px 24px;
-    background-image: image-url('character.png');
-    background-repeat: no-repeat;
-    background-position: right 25px bottom 8px;
-
-    progress {
-      width: 24px;
-      padding-bottom: 0px;
+    img {
+      width: 48px;
+      height: 48px;
+      border-radius: 24px;
+      border: 3px solid white;
     }
   }
 
