@@ -65,4 +65,6 @@ class window.Zombie
     })
 
   _healthBarHTML: (health) ->
-    "<progress value=#{health} max=100 />"
+    "<div class=progress-bar-outside>" +
+      "<div class=progress-bar-inside style='width: #{health}%;'></div>" +
+    "</div>"
