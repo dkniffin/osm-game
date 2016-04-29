@@ -15,7 +15,7 @@ class ZombieSpawner < ActiveInteraction::Base
   def execute
     if Settings['zombie']['spawn']['chance'] > rand() * 100
       number_of_zombies = rand(1..5)
-      puts "spawning #{number_of_zombies} zombies"
+      puts "spawning #{number_of_zombies} zombies" unless Rails.env.test?
       number_of_zombies.times do
         spawn_point = random_spawn_coords(lat: character.lat, lon: character.lon)
         Zombie.create(lat: spawn_point[0], lon: spawn_point[1])
