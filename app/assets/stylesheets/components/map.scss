@@ -11,26 +11,6 @@ body {
   z-index: 10;
 
   .character-icon {
-    // background-size: 24px 24px;
-    // background-image: image-url('character.png');
-    // background-repeat: no-repeat;
-    // background-position: right 25px bottom 8px;
-
-    .progress-bar-outside {
-      width: 48px;
-      height: 10px;
-      background-color: gray;
-      margin: 2px;
-      border-radius: 5px;
-      border: 1px solid black;
-
-      .progress-bar-inside {
-        height: 8px;
-        border-radius: 4px;
-        background-color: red;
-      }
-    }
-
     img {
       width: 48px;
       height: 48px;

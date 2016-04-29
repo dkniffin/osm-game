@@ -14,9 +14,9 @@ class User < ApplicationRecord
       user.image_url = auth.info.image
 
       user.character = Character.create(
-      name: user.name,
-      lat: Settings['character']['spawn']['lat'],
-      lon: Settings['character']['spawn']['lon']
+        name: user.name,
+        lat: Settings['character']['spawn']['lat'],
+        lon: Settings['character']['spawn']['lon']
       )
     end
   end

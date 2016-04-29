@@ -68,6 +68,7 @@ class window.Character
 
   _updateSidebar: ->
     sidebar = $('.sidebar .sidebar__character')
+    sidebar.find('.character-image').attr('src', @data.icon_url)
     sidebar.find('.name').html(@data.name)
     sidebar.find('.health').html(@data.health)
     sidebar.find('.equipped').html(@_equippedHTML(@data.equipped_items))

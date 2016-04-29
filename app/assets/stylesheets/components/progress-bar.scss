@@ -1,0 +1,13 @@
+.progress-bar-outside {
+  width: 100%;
+  background-color: gray;
+  margin: 2px;
+  border-radius: 5px;
+  border: 1px solid black;
+
+  .progress-bar-inside {
+    height: 8px;
+    border-radius: 4px;
+    background-color: red;
+  }
+}
