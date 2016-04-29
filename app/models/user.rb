@@ -13,6 +13,14 @@ class User < ApplicationRecord
       user.name = auth.info.name
       user.image_url = auth.info.image
 
+      # For spawning zone
+      # location = auth.info.location
+      # spawn_zone = Geocoder.search(location).first.data['geometry']['bounds']
+
+      # For starting skills
+      # work_positions = auth.extra.raw_info.work.map(&:position).map(&:name)
+      # education = auth.extra.raw_info.education.map(&:concentration).compact.flatten.map(&:name)
+
       user.character = Character.create(
         name: user.name,
         lat: Settings['character']['spawn']['lat'],
