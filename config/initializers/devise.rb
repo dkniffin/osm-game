@@ -240,7 +240,8 @@ Devise.setup do |config|
                   Rails.application.secrets.facebook['app_id'],
                   Rails.application.secrets.facebook['app_secret'],
                   scope: 'user_location, user_education_history, user_work_history',
-                  info_fields: 'name, email, location, work, education'
+                  info_fields: 'name, email, location, work, education',
+                  image_size: 'large'
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
