@@ -29,6 +29,9 @@ class window.Character
       @marker.on('click', @select.bind(this))
       @marker.addTo(App.leaflet_map)
 
+    if @data['user_id'] == parseInt(Cookies.get('user_id'))
+      App.leaflet_map.panTo(@marker.getLatLng())
+
     # @marker.addTo(App.minimap)
 
   update: (data) ->

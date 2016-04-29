@@ -7,7 +7,7 @@ body {
   position: absolute;
   top: 35px;
   bottom: 0;
-  width: 100%;
+  width: calc(100% - 300px);
   z-index: 10;
 
   .character-icon {

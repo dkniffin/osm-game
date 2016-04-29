@@ -22,6 +22,7 @@ gem 'activerecord-postgis-adapter', '~> 4.0.0.beta'
 
 source 'https://rails-assets.org' do
   gem 'rails-assets-osmbuildings-gl'
+  gem 'rails-assets-js-cookie'
 end
 
 group :development, :test do
