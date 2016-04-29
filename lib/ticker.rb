@@ -10,8 +10,10 @@ class Ticker
   end
 
   def run
+    puts "Running."
     tick_count = 0
     every_tick do
+      puts "Tick: #{tick_count}" if tick_count % 100 == 0
       tick_count += 1
       tick_model(Character, CharacterTicker, tick_count)
       tick_model(Zombie, ZombieTicker, tick_count)

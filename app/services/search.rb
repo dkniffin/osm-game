@@ -1,11 +1,9 @@
 class Search < ActiveInteraction::Base
   interface :character, methods: %i(items latlng search_level)
 
-  STATS = YAML.load(File.read(Rails.root.join('app', 'data', 'location_resources.yml'))).freeze
-
   def execute
     # get character's location
-    location = OSM::Way.containing_point(character.latlng).with_type.first
+    location = character.current_location
 
     # If there's no location, return
     return if location.nil?
@@ -25,6 +23,6 @@ class Search < ActiveInteraction::Base
   end
 
   def resource_stats(location)
-    STATS[location.location_type]
+    LocationType.get(location.location_type).try(:[], 'resources')
   end
 end

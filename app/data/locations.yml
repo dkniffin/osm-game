@@ -1,0 +1,37 @@
+medical:
+  resources:
+    medical: 4
+    food: 1
+police:
+  resources:
+    weapon: 5
+    medical: 1
+    food: 1
+weapon_shop:
+  resources:
+    weapon: 5
+sporting_goods:
+  resources:
+    weapon: 2
+    medical: 2
+    food: 1
+pawnbroker:
+  resources:
+    weapon: 1
+house:
+  resources:
+    weapon: 1
+    medical: 2
+    food: 5
+gas_station:
+  resources:
+    weapon: 1
+    medical: 5
+    food: 10
+office:
+  resources:
+    food: 1
+    medical: 1
+cemetery:
+  resources:
+    weapon: 1

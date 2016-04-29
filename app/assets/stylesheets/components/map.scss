@@ -25,9 +25,10 @@ body {
     background-repeat: no-repeat;
     background-position: right 25px bottom 8px;
 
-    progress {
+    .progress-bar-outside {
       width: 24px;
-      padding-bottom: 0px;
+      height: 6px;
+      border-radius: 3px;
     }
   }
 }

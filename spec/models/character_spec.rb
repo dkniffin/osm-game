@@ -149,30 +149,9 @@ describe Character, type: :model do
     end
   end
 
-  describe '#delete_if_dead?' do
-    context 'when health is 0 or below' do
-      before do
-        subject.update(health: 0)
-        subject.delete_if_dead
-      end
-
-      it 'destroys the character' do
-        expect { subject.reload }.to raise_error(ActiveRecord::RecordNotFound)
-      end
-    end
-
-    context 'when health is above 0' do
-      it 'does not destroy the characer' do
-        expect(subject).to be_valid
-      end
-    end
-  end
-
   describe '#dead?' do
     context 'when health is below 0' do
-      before do
-         subject.update(health: 0)
-      end
+      before { subject.update(health: 0) }
 
       it 'returns true' do
         expect(subject.dead?).to eq(true)

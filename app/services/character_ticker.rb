@@ -9,6 +9,9 @@ class CharacterTicker < ActiveInteraction::Base
     handle_hunger
     handle_thirst
     handle_life
+    if tick_count % Settings['zombie']['spawn']['interval'] == 0
+      ZombieSpawner.run!(character: character)
+    end
 
     if character.changed?
       character.save
