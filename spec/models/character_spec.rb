@@ -167,9 +167,22 @@ describe Character, type: :model do
 
   describe '#respawn' do
     before { subject.respawn }
+
     it 'puts the character at the respawn location' do
       expect(subject.lat).to eq(Settings['character']['spawn']['lat'])
       expect(subject.lng).to eq(Settings['character']['spawn']['lon'])
+    end
+
+    it "resets the character's health" do
+      expect(subject.health).to eq(100)
+    end
+
+    it "resets the character's food" do
+      expect(subject.food).to eq(100)
+    end
+
+    it "resets the character's water" do
+      expect(subject.water).to eq(100)
     end
   end
 
