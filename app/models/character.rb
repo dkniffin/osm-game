@@ -97,6 +97,10 @@ class Character < ActiveRecord::Base
     user.try(:image_url) || ''
   end
 
+  def current_location
+    @location ||= OSM::Way.containing_point(latlng).with_type.first
+  end
+
   private
 
   def include_in_to_json
